@@ -1,0 +1,151 @@
+body{
+	text-align:center;
+	color:#333333;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 12px;
+}
+
+a:link {
+	color: #FF0000;
+	text-decoration: none;
+	font-weight:bold;
+	
+}
+a:hover {
+	color: #F2C43B;
+	font-weight:bold;
+}
+a:visited {
+	color: #E17048;
+	text-decoration: none;
+	font-weight:bold;
+}
+
+#cornice {
+	background-image: url(/../img/cornice.gif);
+	background-repeat: no-repeat;
+	height: 483px;
+	width: 600px;
+	margin: auto;
+}
+
+#intestazione {
+	background-image: url(/../img/logo.jpg);
+	background-repeat: no-repeat;
+	background-position: left top;
+	}
+
+#centrato {
+	background-repeat: no-repeat;
+	height: auto;
+	width: 758px;
+	margin: auto;	
+}
+
+#left_menu {
+	float:left;
+	width:150px;
+	text-align:left;
+}
+.pulsante {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-style: normal;
+	line-height: normal;
+	font-weight: bold;
+	color: #FF0000;
+	text-align: center;
+	float: left;
+	width: 150px;
+	border: 1px solid #666;
+	background-color: #666;
+
+}
+.menu_accessibile {
+	display: none;
+}
+
+#maintxt{
+	float:left;
+	
+}
+
+#img_left{
+	float:left;
+}
+#img_right{
+	float:left;
+}
+
+#titolo_el1 {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 24px;
+	font-style: normal;
+	line-height: normal;
+	font-weight: bold;
+	font-variant: normal;
+	text-transform: lowercase;
+	color: #FF0000;
+	float: left;
+	display:none;
+	
+}
+#titolo_el2 {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 24px;
+	font-weight: normal;
+	font-variant: normal;
+	text-transform: lowercase;
+	color: #FF0000;
+	float: right;
+	display:none;
+}
+
+#header {
+	
+	clear:left
+}
+
+.pulsante_sel {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-style: normal;
+	line-height: normal;
+	font-weight: bold;
+	color: #FFFFFF;
+	text-align: center;
+	float: left;
+	width: 150px;
+	background-color: #FF0000;
+	border-bottom-width: 2px;
+	border-bottom-style: solid;
+	border-bottom-color: #FF0000;
+}
+
+h3 {
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 14px;
+	font-style: normal;
+	line-height: normal;
+	font-weight: bold;
+	font-variant: small-caps;
+	text-transform: capitalize;
+	color: #FF0000;
+	text-align:center
+}
+
+
+
+#right_txt {
+	float:left;
+	text-align:left;
+	width:550px;
+	border-left-width: thin;
+	border-left-style: solid;
+	border-left-color: #990000;
+	padding-left: 1em;
+}
+#centrato #header .pulsante a {
+	color: #FFF;
+	text-decoration: none;
+}

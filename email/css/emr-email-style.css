@@ -1,0 +1,63 @@
+/** COLORI **/
+
+.emr-rosso-emr-testo {
+	color:#e32119;
+	}
+	
+.emr-rosso-emr-sfondo {
+	background-color:#e32119;
+	}
+	
+.emr-bianco-emr-testo {
+	color:#ffffff;
+	}
+	
+.emr-bianco-emr-sfondo {
+	background-color:#ffffff;
+	}
+	
+.emr-grigio-chiaro-testo {
+	color:#f3f3f3;
+	}
+	
+.emr-grigio-chiaro-sfondo {
+	background-color:#f3f3f3;
+	}
+	
+.emr-grigio-scuro-testo {
+	color:#555555;
+	}
+	
+.emr-grigio-scuro-sfondo {
+	background-color:#555555;
+	}
+
+/*** SPAZIATURE ***/
+
+.emr-padding-top-20 {
+	padding-top:20px;
+	}
+
+/*** FOOTER ***/
+
+.emr-font-size-14 {
+	font-size:14px;
+	line-height:17px;
+	}
+	
+/*** UTIL ***/
+
+body {
+  -moz-hyphens: none;
+  -ms-hyphens: none;
+  -webkit-hyphens: none;
+  hyphens: none;
+	}
+	
+small {
+	font-size:14px;
+	}
+	
+h2 small {
+	font-size:24px;
+	}

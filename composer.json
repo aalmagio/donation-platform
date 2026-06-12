@@ -1,0 +1,15 @@
+{
+    "name": "almagioni/donation-platform",
+    "description": "Open-source white-label donation platform for non-profits (PHP)",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=7.4",
+        "ext-mysqli": "*",
+        "ext-curl": "*",
+        "stripe/stripe-php": "^10.6",
+        "satispay/gbusiness-api-php-sdk": "^1.3",
+        "phpmailer/phpmailer": "^6.7",
+        "chillerlan/php-qrcode": "4.3.1"
+    }
+}

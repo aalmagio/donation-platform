@@ -1,0 +1,1 @@
+<nav><p style="text-align: center;"><a href="search.php">Cerca Transazioni NON OK</a> | <a href="oneoff.php">Donazioni oneoff</a> | <a href="regularcc.php">Regolari con carta</a> | <a href="sdd.php">SDD</a> | <a href="<?php echo $logoutAction; ?>">Log out</a></p></nav>

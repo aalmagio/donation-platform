@@ -1,0 +1,155 @@
+/* ============================================
+   Donation Platform - tema base white label
+   Personalizza i colori qui sotto per il tuo brand
+   ============================================ */
+:root {
+  --brand-primary: #2c5f8a;   /* colore principale (bottoni, accenti) */
+  --brand-primary-dark: #1e425f;
+  --brand-bg: #f6f7f9;        /* sfondo pagina */
+  --brand-text: #222;
+  --brand-muted: #666;
+  --brand-error: #c0392b;
+  --brand-radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--brand-bg);
+  color: var(--brand-text);
+  line-height: 1.5;
+}
+
+.site-header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.site-header img.logo { height: 48px; width: auto; }
+.site-header .org-name { font-size: 1.25rem; font-weight: 700; }
+
+.page-wrap {
+  max-width: 640px;
+  margin: 32px auto;
+  padding: 0 16px;
+}
+
+.campaign-header h1 { margin: 0.2em 0; font-size: 2rem; }
+.campaign-header h2 { margin: 0.2em 0; font-size: 1.2rem; font-weight: 400; color: var(--brand-muted); }
+.campaign-header p { color: var(--brand-muted); }
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--brand-radius);
+  padding: 24px;
+  margin-top: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+
+.formstyle { width: 100%; }
+
+legend, .form-legend {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 20px 0 10px;
+  padding: 0;
+}
+
+.text-field {
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: var(--brand-text);
+  background: #fff;
+  border: 2px solid #d7dbe0;
+  border-radius: var(--brand-radius);
+  transition: border-color .2s;
+}
+.text-field:focus { outline: none; border-color: var(--brand-primary); }
+.text-field.error { border-color: var(--brand-error); }
+
+.radio-buttons {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.radio-option {
+  flex: 1 1 28%;
+  min-width: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 2px solid #d7dbe0;
+  border-radius: var(--brand-radius);
+  cursor: pointer;
+  text-align: center;
+  font-weight: 600;
+}
+.radio-option:has(input:checked) { border-color: var(--brand-primary); background: #f0f6fb; }
+.radio-option img { max-width: 90px; height: auto; }
+
+.btn, button.btn {
+  display: inline-block;
+  width: 100%;
+  padding: 14px 24px;
+  margin-top: 16px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--brand-primary);
+  border: none;
+  border-radius: var(--brand-radius);
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+.btn:hover { background: var(--brand-primary-dark); }
+
+.privacy-label { font-size: .9rem; display: block; margin: 10px 0; }
+
+hr { border: none; border-top: 1px solid #eceef1; margin: 20px 0; }
+
+.step { display: none; }
+.step.active { display: block; }
+
+#cardDetails, #altro_importo { display: none; }
+
+.loader {
+  border: 12px solid #f3f3f3;
+  border-top: 12px solid var(--brand-primary);
+  border-radius: 50%;
+  width: 90px;
+  height: 90px;
+  animation: spin 1.5s linear infinite;
+  margin: 24px auto;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.center { text-align: center; }
+
+.site-footer {
+  max-width: 640px;
+  margin: 32px auto;
+  padding: 0 16px 32px;
+  font-size: .85rem;
+  color: var(--brand-muted);
+  text-align: center;
+}
+.site-footer a { color: var(--brand-primary); }

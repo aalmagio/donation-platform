@@ -1,0 +1,30 @@
+# Credenziali e configurazione locale
+.env
+inc/cache_config.php
+
+# Dipendenze
+/vendor/
+/be/vendor/
+node_modules/
+
+# Log e file generati
+/log/*
+!/log/.gitkeep
+/be/log/*
+/img/qr/*
+!/img/qr/.gitkeep
+*.log
+
+# Backup e file temporanei
+*.bak
+*.tmp
+*.old
+*.7z
+Thumbs.db
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+_notes/
+dwsync.xml
