@@ -239,24 +239,63 @@ if ( !function_exists( 'mb_ucfirst' ) ) {
     return mb_strtoupper( mb_substr( $string, 0, 1 ) ) . mb_strtolower( mb_substr( $string, 1 ) );
   }
 }
+// Verifica firma: prova che la richiesta arriva dal legittimo donatore (conosce SALT_MAIL).
+// noted = Id_a, notes = md5(Id_a . SALT_MAIL). Senza questo chiunque potrebbe scrivere su Id_a altrui.
+function grazie_firma_valida() {
+  $id_a = $_POST[ 'noted' ] ?? '';
+  $sig  = $_POST[ 'notes' ] ?? '';
+  return ( $id_a !== '' && is_string( $sig ) && hash_equals( md5( $id_a . SALT_MAIL ), $sig ) );
+}
+
 if ( isset( $_POST[ 'action' ] ) && $_POST[ 'action' ] == 'add_comment' ) {
-  $connection = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME );
-  if ( $connection->connect_errno ) {
-    trigger_error( "Connessione al server mySQL fallita: (" . $connection->connect_errno . ") " . $connection->connect_error, E_USER_ERROR );
+  if ( grazie_firma_valida() ) {
+    $connection = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME );
+    if ( !$connection || $connection->connect_errno ) {
+      error_log( date( '[Y-m-d H:i:s e] ' ) . "grazie.php add_comment: connessione DB fallita" . PHP_EOL, 3, LOG_FILE );
+    } elseif ( $stmt = $connection->prepare( "UPDATE Donazione SET nota=? WHERE CodTrans=?;" ) ) {
+      $nota = mb_substr( trim( (string)( $_POST[ 'new_comment' ] ?? '' ) ), 0, 200 );
+      $stmt->bind_param( 'ss', $nota, $_POST[ 'CodTrans' ] );
+      $stmt->execute();
+      $stmt->close();
+      $connection->close();
+    }
+  } else {
+    error_log( date( '[Y-m-d H:i:s e] ' ) . "grazie.php add_comment: firma non valida (Id_a " . ( $_POST[ 'noted' ] ?? '?' ) . ")" . PHP_EOL, 3, LOG_FILE );
   }
-  // preparo lo statement
-  if ( !( $stmt = $connection->prepare( "UPDATE Donazione SET nota=? WHERE CodTrans=?;" ) ) ) {
-    trigger_error( "Prepare failed: (" . $connection->errno . ") " . $connection->error, E_USER_ERROR );
+}
+
+// Arricchimento anagrafica: aggiorna solo i campi compilati, mai sovrascrive con valori vuoti.
+$enrich_done = false;
+if ( isset( $_POST[ 'action' ] ) && $_POST[ 'action' ] == 'enrich' ) {
+  if ( grazie_firma_valida() ) {
+    $allowed = array( 'indirizzo', 'civico', 'cap', 'citta', 'provincia', 'codFis', 'datanascita' );
+    $sets = array(); $vals = array(); $types = '';
+    foreach ( $allowed as $f ) {
+      $v = trim( (string)( $_POST[ $f ] ?? '' ) );
+      if ( $v === '' ) { continue; }
+      if ( $f === 'provincia' ) { $v = strtoupper( substr( $v, 0, 4 ) ); }
+      if ( $f === 'codFis' )    { $v = strtoupper( $v ); }
+      if ( $f === 'datanascita' && !preg_match( '/^\d{4}-\d{2}-\d{2}$/', $v ) ) { continue; }
+      $sets[] = "`$f`=?"; $vals[] = $v; $types .= 's';
+    }
+    if ( !empty( $sets ) ) {
+      $connection = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME );
+      if ( !$connection || $connection->connect_errno ) {
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "grazie.php enrich: connessione DB fallita" . PHP_EOL, 3, LOG_FILE );
+      } else {
+        $sql = "UPDATE Anagrafica SET " . implode( ', ', $sets ) . " WHERE Id_a=?";
+        $types .= 'i'; $vals[] = (int) $_POST[ 'noted' ];
+        if ( $stmt = $connection->prepare( $sql ) ) {
+          $stmt->bind_param( $types, ...$vals );
+          if ( $stmt->execute() ) { $enrich_done = true; }
+          $stmt->close();
+        }
+        $connection->close();
+      }
+    }
+  } else {
+    error_log( date( '[Y-m-d H:i:s e] ' ) . "grazie.php enrich: firma non valida (Id_a " . ( $_POST[ 'noted' ] ?? '?' ) . ")" . PHP_EOL, 3, LOG_FILE );
   }
-  if ( !$stmt->bind_param( 'ss', $_POST[ 'new_comment' ], $_POST[ 'CodTrans' ] ) ) {
-    trigger_error( "Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
-  }
-  // eseguo la query e chiudo
-  if ( !$stmt->execute() ) {
-    trigger_error( "Execute failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
-  }
-  $stmt->close();
-  $connection->close();
 }
 
 $connection = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME )or trigger_error( mysqli_error( $connection ), E_USER_ERROR );
@@ -291,6 +330,12 @@ $connection->close();
     <h2>La tua donazione è andata a buon fine. Controlla la tua email.</h2>
   </div>
 
+  <?php if ($enrich_done) { ?>
+  <div class="card" style="border-color:#3a8a4f;background:#f1faf3">
+    <strong>✓ Grazie, i tuoi dati sono stati aggiornati.</strong>
+  </div>
+  <?php } ?>
+
   <div class="card">
     <p><strong>Riepilogo della donazione</strong></p>
     <ul>
@@ -304,18 +349,45 @@ $connection->close();
     <?php } ?>
   </div>
 
-  <?php if (isset($donazione_data['CodTrans']) && isset($donazione_data['Id_a'])) { ?>
+  <?php if (isset($donazione_data['Id_a'])) {
+        $sig = md5($donazione_data['Id_a'] . SALT_MAIL);
+        // valori già presenti (per pre-compilare il form di arricchimento)
+        $val = function($k) use ($donazione_data) { return htmlspecialchars($donazione_data[$k] ?? '', ENT_QUOTES, 'UTF-8'); };
+  ?>
+  <?php if (!$enrich_done) { ?>
+  <div class="card">
+    <p><strong>Completa i tuoi dati</strong></p>
+    <p style="color:var(--brand-muted);font-size:.9rem">Facoltativo: utile per inviarti la ricevuta della donazione e gli aggiornamenti. Puoi anche saltare questo passaggio.</p>
+    <form method="post" action="grazie.php">
+      <input type="text" name="indirizzo" placeholder="Indirizzo" class="text-field" value="<?php echo $val('indirizzo'); ?>">
+      <input type="text" name="civico" placeholder="N. civico" class="text-field" value="<?php echo $val('civico'); ?>">
+      <input type="text" name="cap" placeholder="CAP" class="text-field" maxlength="10" value="<?php echo $val('cap'); ?>">
+      <input type="text" name="citta" placeholder="Città" class="text-field" value="<?php echo $val('citta'); ?>">
+      <input type="text" name="provincia" placeholder="Provincia (es. MI)" class="text-field" maxlength="4" value="<?php echo $val('provincia'); ?>">
+      <input type="text" name="codFis" placeholder="Codice Fiscale" class="text-field" maxlength="16" value="<?php echo $val('codFis'); ?>">
+      <label style="display:block;font-size:.85rem;color:var(--brand-muted);margin:6px 0 2px">Data di nascita</label>
+      <input type="date" name="datanascita" class="text-field" value="<?php echo $val('datanascita'); ?>">
+      <input type="hidden" name="action" value="enrich">
+      <input type="hidden" name="noted" value="<?php echo htmlspecialchars($donazione_data['Id_a'], ENT_QUOTES, 'UTF-8'); ?>">
+      <input type="hidden" name="notes" value="<?php echo $sig; ?>">
+      <button type="submit" class="btn">Salva i miei dati</button>
+    </form>
+  </div>
+  <?php } ?>
+
+  <?php if (isset($donazione_data['CodTrans'])) { ?>
   <div class="card">
     <p><strong>Vuoi lasciare un commento?</strong></p>
     <form method="post" action="grazie.php">
       <input type="text" name="new_comment" maxlength="200" placeholder="Il tuo commento" class="text-field">
       <input type="hidden" name="action" value="add_comment">
-      <input type="hidden" name="CodTrans" value="<?php echo htmlspecialchars($donazione_data['CodTrans']); ?>">
-      <input type="hidden" name="noted" value="<?php echo htmlspecialchars($donazione_data['Id_a']); ?>">
-      <input type="hidden" name="notes" value="<?php echo md5($donazione_data['Id_a'] . SALT_MAIL); ?>">
+      <input type="hidden" name="CodTrans" value="<?php echo htmlspecialchars($donazione_data['CodTrans'], ENT_QUOTES, 'UTF-8'); ?>">
+      <input type="hidden" name="noted" value="<?php echo htmlspecialchars($donazione_data['Id_a'], ENT_QUOTES, 'UTF-8'); ?>">
+      <input type="hidden" name="notes" value="<?php echo $sig; ?>">
       <button type="submit" class="btn">Invia commento</button>
     </form>
   </div>
+  <?php } ?>
   <?php } ?>
 
   <div class="center" style="margin-top:24px">
