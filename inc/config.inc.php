@@ -163,6 +163,26 @@ if (!defined('ORG_PRIVACY_URL'))   define('ORG_PRIVACY_URL', env('ORG_PRIVACY_UR
 // Email del super-amministratore del backend (autorizzato a creare utenti admin)
 if (!defined('SUPERADMIN_EMAIL'))  define('SUPERADMIN_EMAIL', env('SUPERADMIN_EMAIL', ''));
 
+// --- Default difensivi per parametri opzionali ---
+// Evitano errori fatali su installazioni che non hanno questi record nella tabella `config`.
+if (!defined('ALERT_MAIL'))      define('ALERT_MAIL', ORG_EMAIL);
+// IP Attempt Limiter: blocca/segnala troppe donazioni dallo stesso IP. Disattivo di default.
+if (!defined('IPAL_MAIL_ENABLE')) define('IPAL_MAIL_ENABLE', 0);
+if (!defined('IPAL_STOP_ENABLE')) define('IPAL_STOP_ENABLE', 0);
+if (!defined('IPAL_TIME'))        define('IPAL_TIME', 60);   // finestra in minuti
+if (!defined('IPAL_ATTEMPTS'))    define('IPAL_ATTEMPTS', 10); // soglia di alert
+if (!defined('IPAL_STOP'))        define('IPAL_STOP', 20);   // soglia di blocco
+
+// Feature "tessere associative" (USE_TESSERA): costanti referenziate dalla validazione
+// anche quando la feature è spenta. Default = sentinelle che non corrispondono a centri reali.
+if (!defined('DB_DBNAME_TGIFT'))   define('DB_DBNAME_TGIFT', DB_DBNAME);
+if (!defined('TESSERA_COD'))       define('TESSERA_COD', '__no_tessera__');
+if (!defined('TESSERA_GIFT'))      define('TESSERA_GIFT', '__no_tessera_gift__');
+if (!defined('TESSERA_DESC'))      define('TESSERA_DESC', '');
+if (!defined('TESSERA_COST_JUNIOR')) define('TESSERA_COST_JUNIOR', 0);
+if (!defined('TESSERA_COST_SENIOR')) define('TESSERA_COST_SENIOR', 0);
+if (!defined('DATA_SCAD_TESSERA')) define('DATA_SCAD_TESSERA', '');
+
 // Debug automatico basato su USE_SANDBOX
 if (defined('USE_SANDBOX') && USE_SANDBOX) {
     define('DEBUG', 1);

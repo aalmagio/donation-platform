@@ -29,20 +29,33 @@ CREATE TABLE IF NOT EXISTS `Anagrafica` (
   `Id_a` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `nome` VARCHAR(100),
   `cognome` VARCHAR(100),
-  `mail` VARCHAR(255),
-  `tel` VARCHAR(32),
+  `ragioneSociale` VARCHAR(255),
+  `sesso` CHAR(1) DEFAULT 'X',                 -- M/F/S(società)/X(da verificare)
   `indirizzo` VARCHAR(255),
   `civico` VARCHAR(16),
   `cap` VARCHAR(10),
   `citta` VARCHAR(100),
   `provincia` VARCHAR(4),
-  `operazione` VARCHAR(16),
+  `stato` VARCHAR(4) DEFAULT 'I',              -- codice stato (I = Italia)
+  `tel` VARCHAR(32),
+  `mail` VARCHAR(255),
+  `codFis` VARCHAR(16),
+  `PIVA` VARCHAR(16),
+  `datanascita` DATE NULL,
   `privacy` CHAR(1) DEFAULT 'N',
-  `CodiceReferral` VARCHAR(64),
+  `id_fonte` VARCHAR(32),
+  `id_campagna` VARCHAR(64),
+  `IP` VARCHAR(45),
+  `tipo_ana` VARCHAR(8),
+  `operazione` VARCHAR(16),                    -- oneoff / regular
+  `lang` VARCHAR(4) DEFAULT 'it',
   `CodicePersonale` VARCHAR(64),
-  `data` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `CodiceReferral` VARCHAR(64),
+  `ID_Mentor` VARCHAR(32),                     -- codice anagrafica nel CRM (nullable)
+  `data_ins` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`Id_a`),
-  KEY `idx_mail` (`mail`)
+  KEY `idx_mail` (`mail`),
+  KEY `idx_ip_data` (`IP`, `data_ins`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------
@@ -61,9 +74,12 @@ CREATE TABLE IF NOT EXISTS `Donazione` (
   `esito` VARCHAR(4),                         -- OK, KO, WA (in attesa)
   `data` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `tipo` VARCHAR(16),                         -- oneoff, regular
+  `causale` VARCHAR(64),
   `CodiceMentor` VARCHAR(64),
   `codicePartner` VARCHAR(64),
   `id_campagna` VARCHAR(64),
+  `gadget` VARCHAR(64),                        -- eventuale ricompensa/gadget associato
+  `valido` CHAR(1) DEFAULT 'Y',
   `ringraziata` CHAR(1) DEFAULT 'N',
   `remainder` INT DEFAULT 0,
   PRIMARY KEY (`Id_d`),
@@ -115,29 +131,41 @@ CREATE TABLE IF NOT EXISTS `GestPay` (
 
 -- ------------------------------------------------------------
 -- Transazioni PayPal Checkout
+-- (colonne allineate all'INSERT in function/inc/functions_paypal.php)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `PayPalCheckout` (
   `Id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `CodTrans` VARCHAR(32),
-  `orderID` VARCHAR(64),
-  `status` VARCHAR(32),
+  `Id_OrderPayPal` VARCHAR(64),               -- order/token PayPal
+  `token_type` VARCHAR(32),
+  `access_token` TEXT,
   `data` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`Id`),
-  KEY `idx_codtrans` (`CodTrans`)
+  KEY `idx_codtrans` (`CodTrans`),
+  KEY `idx_orderpaypal` (`Id_OrderPayPal`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------
 -- Transazioni Satispay
+-- (colonne allineate all'INSERT in function/inc/functions_satispay.php)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `Satispay` (
-  `Id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `Id_satispay` INT UNSIGNED NOT NULL AUTO_INCREMENT,  -- PK interna (rinominata: `id` è il payment id Satispay)
   `CodTrans` VARCHAR(32),
   `id` VARCHAR(64),                           -- payment id Satispay
   `code_identifier` VARCHAR(128),
+  `type` VARCHAR(32),
+  `amount_unit` VARCHAR(16),                  -- importo in centesimi (199 = 1,99)
+  `currency` VARCHAR(8),
   `status` VARCHAR(32),
+  `expired` VARCHAR(8),
+  `insert_date` VARCHAR(40),
+  `expire_date` VARCHAR(40),
+  `flow` VARCHAR(32),
   `data` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`Id`),
-  KEY `idx_codtrans` (`CodTrans`)
+  PRIMARY KEY (`Id_satispay`),
+  KEY `idx_codtrans` (`CodTrans`),
+  KEY `idx_code_identifier` (`code_identifier`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------
@@ -166,13 +194,28 @@ CREATE TABLE IF NOT EXISTS `Partner` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------
--- Voucher
+-- Voucher / tessere in regalo (feature TESSERA_GIFT)
+-- (colonne allineate alle query in function/inc/functions_mysql.php)
+-- Spesso risiede in un DB separato: vedi DB_DBNAME_TGIFT
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `Voucher` (
-  `Id_voucher` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `codice` VARCHAR(64),
-  `usato` CHAR(1) DEFAULT 'N',
-  PRIMARY KEY (`Id_voucher`)
+  `Id_donato` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `Id_donatore` INT UNSIGNED,                 -- Id_a del donatore che regala
+  `CodTrans` VARCHAR(32),
+  `GUID` VARCHAR(64),
+  `nome_d` VARCHAR(100),
+  `cognome_d` VARCHAR(100),
+  `mail_d` VARCHAR(255),
+  `campagna` VARCHAR(64),
+  `campagna_donazione` VARCHAR(64),
+  `data_invio_mail` DATETIME NULL,
+  `id_richiesta` INT UNSIGNED NULL,           -- Id_a del beneficiario, dopo il riscatto
+  `Esito_donazione` VARCHAR(4) NULL,
+  `id_mentor_donatore` VARCHAR(64) NULL,
+  `id_mentor_donazione` VARCHAR(64) NULL,
+  PRIMARY KEY (`Id_donato`),
+  KEY `idx_codtrans` (`CodTrans`),
+  KEY `idx_guid` (`GUID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------

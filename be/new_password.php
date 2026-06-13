@@ -130,7 +130,7 @@ if ( count( $errors ) > 0 ) {
     foreach ( $errors as $error ) {
         echo $error;
     }
-    echo "<br><a href=\"new_password.php?token=".$_GET['token']."\">Torna alla reimpostazione della password</a></div>";
+    echo "<br><a href=\"new_password.php?token=".htmlspecialchars( $_GET['token'] ?? '', ENT_QUOTES, 'UTF-8' )."\">Torna alla reimpostazione della password</a></div>";
 } else {
     ?>
 <form action="<?php echo $editFormAction; ?>" method="POST" name="changepassword" id="changepassword" class="form-signin">

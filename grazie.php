@@ -171,6 +171,8 @@ if ( isset( $_GET[ 'p' ] ) ) {
   $azione_data = '';
 }
 if ( !empty( $azione_data ) ) {
+  // Token interno: prova al WS che la richiesta arriva dal server (anti-IDOR su get/data)
+  $azione_data['token'] = hash_hmac( 'sha256', 'get_data', defined('SALT_MAIL') ? SALT_MAIL : '' );
   $azione = array( "operation" => 'get', "param" => 'data', "data" => $azione_data );
   $azione_string = json_encode( $azione, JSON_UNESCAPED_UNICODE );
   // DEBUG

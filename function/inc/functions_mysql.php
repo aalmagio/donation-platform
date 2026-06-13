@@ -31,18 +31,20 @@ function ScriviAnagrafica_mysql( $anagrafica ) {
         error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviAnagrafica_mysql prepare failed: " . $connection->error . PHP_EOL, 3, LOG_FILE );
         return array( "Errore di scrittura in mysql", "" );
     }
+    // Variabili intermedie: bind_param richiede riferimenti, non valori di ritorno di funzioni
+    $provincia = strtoupper( $anagrafica->provincia ?? '' );
     if ( $anagrafica->sesso == "S" ) {
         $nome = "C.A. " . $anagrafica->nome . " " . $anagrafica->cognome;
         $cognome = "";
         $CodicePersonale = generateReferralCode( $cognome, $anagrafica->CodTrans );
-        if ( !$stmt->bind_param( 'ssssssssssssssssisssssss', $nome, $cognome, $anagrafica->ragioneSociale, $anagrafica->sesso, $anagrafica->indirizzo, $anagrafica->civico, $anagrafica->cap, $anagrafica->citta, strtoupper( $anagrafica->provincia ), $anagrafica->stato, $anagrafica->tel, $anagrafica->mail, $anagrafica->codFis, $anagrafica->partitaIVA, $anagrafica->mysqldatanascita, $anagrafica->privacy, $anagrafica->id_fonte, $anagrafica->id_campagna, $anagrafica->IP, $anagrafica->tipo_ana, $anagrafica->tipo_donazione, $anagrafica->lang, $CodicePersonale, $anagrafica->CodiceReferral ) ) {
+        if ( !$stmt->bind_param( 'ssssssssssssssssisssssss', $nome, $cognome, $anagrafica->ragioneSociale, $anagrafica->sesso, $anagrafica->indirizzo, $anagrafica->civico, $anagrafica->cap, $anagrafica->citta, $provincia, $anagrafica->stato, $anagrafica->tel, $anagrafica->mail, $anagrafica->codFis, $anagrafica->partitaIVA, $anagrafica->mysqldatanascita, $anagrafica->privacy, $anagrafica->id_fonte, $anagrafica->id_campagna, $anagrafica->IP, $anagrafica->tipo_ana, $anagrafica->tipo_donazione, $anagrafica->lang, $CodicePersonale, $anagrafica->CodiceReferral ) ) {
             error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviAnagrafica_mysql bind failed: " . $stmt->error . PHP_EOL, 3, LOG_FILE );
             $stmt->close();
             return array( "Errore di scrittura in mysql", "" );
         }
     } else {
         $CodicePersonale = generateReferralCode( $anagrafica->cognome, $anagrafica->CodTrans );
-        if ( !$stmt->bind_param( 'ssssssssssssssssisssssss', $anagrafica->nome, $anagrafica->cognome, $anagrafica->ragioneSociale, $anagrafica->sesso, $anagrafica->indirizzo, $anagrafica->civico, $anagrafica->cap, $anagrafica->citta, strtoupper( $anagrafica->provincia ), $anagrafica->stato, $anagrafica->tel, $anagrafica->mail, $anagrafica->codFis, $anagrafica->partitaIVA, $anagrafica->mysqldatanascita, $anagrafica->privacy, $anagrafica->id_fonte, $anagrafica->id_campagna, $anagrafica->IP, $anagrafica->tipo_ana, $anagrafica->tipo_donazione, $anagrafica->lang, $CodicePersonale, $anagrafica->CodiceReferral ) ) {
+        if ( !$stmt->bind_param( 'ssssssssssssssssisssssss', $anagrafica->nome, $anagrafica->cognome, $anagrafica->ragioneSociale, $anagrafica->sesso, $anagrafica->indirizzo, $anagrafica->civico, $anagrafica->cap, $anagrafica->citta, $provincia, $anagrafica->stato, $anagrafica->tel, $anagrafica->mail, $anagrafica->codFis, $anagrafica->partitaIVA, $anagrafica->mysqldatanascita, $anagrafica->privacy, $anagrafica->id_fonte, $anagrafica->id_campagna, $anagrafica->IP, $anagrafica->tipo_ana, $anagrafica->tipo_donazione, $anagrafica->lang, $CodicePersonale, $anagrafica->CodiceReferral ) ) {
             error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviAnagrafica_mysql bind failed: " . $stmt->error . PHP_EOL, 3, LOG_FILE );
             $stmt->close();
             return array( "Errore di scrittura in mysql", "" );

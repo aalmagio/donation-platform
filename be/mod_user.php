@@ -80,7 +80,7 @@ function utf8ize( $d ) {
                         GetSQLValueString( $_POST[ 'ID_utente' ], "int" ) );
                     $Result1 = mysqli_query( $conn, $updateSQL )or die( mysqli_error( $conn ) );
                   
-                    echo "l'utente " . $_POST[ 'Nominativo' ] . " (" . $_POST[ 'mail' ] . ") &egrave; stato modificato. <br />
+                    echo "l'utente " . htmlspecialchars( $_POST[ 'Nominativo' ] ?? '', ENT_QUOTES, 'UTF-8' ) . " (" . htmlspecialchars( $_POST[ 'mail' ] ?? '', ENT_QUOTES, 'UTF-8' ) . ") &egrave; stato modificato. <br />
                     <a href=\"users.php\">Torna alla gesione utenti</a>";
                     exit;
                 } else {

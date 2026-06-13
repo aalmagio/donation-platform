@@ -1,10 +1,15 @@
 <?php //Satisapy
 function SatispayGetPayment( $dati ) {
-        if ( DEBUG == true ) {
+        // Credenziali assenti: errore gestito invece di fatal (es. USE_SATISPAY attivo senza chiavi)
+        if ( !defined( 'SY_AUTH' ) || trim( SY_AUTH ) === '' ) {
+            error_log( date( '[Y-m-d H:i:s e] ' ) . "Satispay: SY_AUTH non configurato (chiavi mancanti in .env)" . PHP_EOL, 3, LOG_FILE );
+            return null;
+        }
+        if ( defined( 'USE_SANDBOX' ) && USE_SANDBOX == true ) {
             \SatispayGBusiness\Api::setSandbox( true );
     	}
     	$authData = json_decode( SY_AUTH );
-    	
+
     	\SatispayGBusiness\Api::setPublicKey( $authData->public_key );
         \SatispayGBusiness\Api::setPrivateKey( $authData->private_key );
         \SatispayGBusiness\Api::setKeyId( $authData->key_id );

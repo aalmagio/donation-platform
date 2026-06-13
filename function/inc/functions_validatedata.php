@@ -325,7 +325,7 @@ function ValidaDati() {
             $messaggio_errore .= "M026|";
             $arr_errore[ 'M026' ] = 0; //"Manca la casuale della donazione";
         }
-        $query_data->nota = strip_tags( (string)$query_data->nota );
+        $query_data->nota = strip_tags( (string)( $query_data->nota ?? '' ) );
 
         if ( in_array( "nota", $req_fields ) && ( !isset( $query_data->nota ) || trim( $query_data->nota ) == "" ) ) {
             $errore++;

@@ -45,6 +45,9 @@ if (isset($_GET)){
 		if ( "PENDING" == $row['status'] && "WA" == $row[ 'esito' ] ) { //Transazione Satispay OK o KO in stato WA
             if ( DEBUG == true ) {
                 error_log( date( '[Y-m-d H:i:s e] ' ) . "Satispay callback_url  WA" . PHP_EOL, 3, LOG_FILE ); //DEBUG
+            }
+            // L'ambiente Satispay dipende esplicitamente da USE_SANDBOX, non dal flag di debug
+            if ( defined( 'USE_SANDBOX' ) && USE_SANDBOX == true ) {
                 \SatispayGBusiness\Api::setSandbox( true );
             }
 			$authData = json_decode( SY_AUTH );

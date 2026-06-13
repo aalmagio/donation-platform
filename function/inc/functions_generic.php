@@ -5,29 +5,16 @@
  */
  
 function strip_log_CC( $string ) {
-    preg_match( '/"cartan":"[0-9]{13,19}"/', $string, $output_array );
-    if ( preg_match( '/"cartan":"[0-9]{13,19}"/', $string ) ) {
-        $replacement = substr( $output_array[ 0 ], 0, 14 ) . '...' . substr( $output_array[ 0 ], -5 );
-        $string = preg_replace( '/"cartan":"[0-9]{13,19}"/', $replacement, $string );
+    // Maschera il PAN lasciando visibili solo le ultime 4 cifre.
+    // Le regex tollerano spazi attorno ai due punti (es. "cartan": "1234...").
+    foreach ( array( 'cartan', 'cardNumber', 'number' ) as $field ) {
+        $pattern = '/"' . $field . '"\s*:\s*"([0-9]{12,19})"/';
+        $string = preg_replace_callback( $pattern, function ( $m ) use ( $field ) {
+            return '"' . $field . '":"' . str_repeat( '*', strlen( $m[ 1 ] ) - 4 ) . substr( $m[ 1 ], -4 ) . '"';
+        }, $string );
     }
-    //Numero di carta: cardNumber
-    preg_match( '/"cardNumber":"[0-9]{13,19}"/', $string, $output_array );
-    if ( preg_match( '/"cardNumber":"[0-9]{13,19}"/', $string ) ) {
-        $replacement = substr( $output_array[ 0 ], 0, 18 ) . '...' . substr( $output_array[ 0 ], -5 );
-        $string = preg_replace( '/"cardNumber":"[0-9]{13,19}"/', $replacement, $string );
-    }
-    //Numero di carta: number
-    preg_match( '/"number":"[0-9]{13,19}"/', $string, $output_array );
-    if ( preg_match( '/"number":"[0-9]{13,19}"/', $string ) ) {
-        $replacement = substr( $output_array[ 0 ], 0, 18 ) . '...' . substr( $output_array[ 0 ], -5 );
-        $string = preg_replace( '/"number":"[0-9]{13,19}"/', $replacement, $string );
-    }
-    //CVV
-    preg_match( '/"cvv":"[0-9]{1,4}"/', $string, $output_array );
-    if ( preg_match( '/"cvv":"[0-9]{1,4}"/', $string ) ) {
-        $replacement = '"cvv":"xxx"';
-        $string = preg_replace( '/"cvv":"[0-9]{1,4}"/', $replacement, $string );
-    }
+    // CVV: sostituito sempre (non va mai conservato, nemmeno parzialmente)
+    $string = preg_replace( '/"cvv"\s*:\s*"[0-9]{1,4}"/', '"cvv":"xxx"', $string );
     return $string;
 }
 

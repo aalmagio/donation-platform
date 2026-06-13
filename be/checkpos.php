@@ -116,7 +116,7 @@ elseif ( isset( $_POST[ 'ccid' ] ) ) { // Contollo GestPay
 		else {
 			echo "Si &egrave; verificato un errore (" . $payment->error->code .  ") " . $payment->error->description ."<br>" ;
 			echo "<strong>La transazione non risulta presente o richiamabile tramite API.<br> Se vuoi effettuare ulteriori controlli vai sul backend di GestPay</strong>";
-            echo "<br>". $_POST[ 'ccid' ] ;
+            echo "<br>". htmlspecialchars( $_POST[ 'ccid' ] ?? '', ENT_QUOTES, 'UTF-8' ) ;
 
 		}
 

@@ -56,6 +56,24 @@ function utf8ize( $d ) {
 // Gestione caratteri spciali -FINE
 $conn = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME )or trigger_error( mysqli_error(), E_USER_ERROR );
 //mysql_select_db(DB_DBNAME, $Donazioni);
+
+// --- Sanitizzazione input (anti SQL injection) ---
+foreach ( array( 'date3', 'date4' ) as $d ) {
+    if ( isset( $_GET[ $d ] ) && !preg_match( '/^\d{4}-\d{2}-\d{2}$/', $_GET[ $d ] ) ) {
+        unset( $_GET[ $d ] );
+    }
+}
+foreach ( array( 'pay_method', 'esito', 'tipo_donazioni', 'ID_Mentor' ) as $p ) {
+    if ( isset( $_GET[ $p ] ) ) {
+        $_GET[ $p ] = $conn->real_escape_string( $_GET[ $p ] );
+    }
+}
+foreach ( array( 'pageNum_donazione', 'totalRows_donazione' ) as $n ) {
+    if ( isset( $_GET[ $n ] ) ) {
+        $_GET[ $n ] = (int) $_GET[ $n ];
+    }
+}
+
 if ( isset( $_GET[ 'date3' ] ) && isset( $_GET[ 'date4' ] ) ) {
     if ( $_GET[ 'date3' ] > date( "Y-m-d" ) ) {
         echo "<p>La data iniziale del periodo &egrave; nel futuro. Non &egrave; possibile effettuare la query.</p>";

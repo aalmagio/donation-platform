@@ -100,7 +100,7 @@ function utf8ize( $d ) {
                     }
                 $stmt->close();
             }
-                $query_partner =  sprintf("SELECT * FROM Partner WHERE Id_partner = %s ORDER BY Nome ASC", $_REQUEST['id']);
+                $query_partner =  sprintf("SELECT * FROM Partner WHERE Id_partner = %d ORDER BY Nome ASC", (int) $_REQUEST['id']);
                 $partner = mysqli_query( $conn, $query_partner )or die( mysqli_error() );
                 $row_partner = mysqli_fetch_assoc( $partner );
                 $totalRows_partner = mysqli_num_rows( $partner );

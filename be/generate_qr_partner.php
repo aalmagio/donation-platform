@@ -55,7 +55,7 @@ if ( isset( $_POST[ 'qrid' ] ) ) { // Controllo Satispay
 <div class="container">
  <!-- <img src='<?= $qrcode ?>' alt='QR Code' width='800' height='800'>-->
     <img src="../img/qr/par_<?php echo $secret; ?>.jpg" alt='QR Code' width='250' height='250'>
-	<p><?php echo "URL:" . $url_di_base.'/ticket.php?d='.$_POST[ 'qrid' ].'&s='.$secret.'&t=partner' ."<br>QR ID = ".$_POST[ 'qrid' ]; ?> </p>
+	<p><?php $qrid_safe = htmlspecialchars( $_POST[ 'qrid' ] ?? '', ENT_QUOTES, 'UTF-8' ); echo "URL:" . htmlspecialchars( $url_di_base, ENT_QUOTES, 'UTF-8' ).'/ticket.php?d='.$qrid_safe.'&s='.$secret.'&t=partner' ."<br>QR ID = ".$qrid_safe; ?> </p>
 </div>
 </body>
 </html>

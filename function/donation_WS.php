@@ -256,12 +256,22 @@ if ( $query_action->operation == "do" && $query_action->param == "transaction" )
                         error_log( date( '[Y-m-d H:i:s e] ' ) . "URL autorizzazone PAYPAL: " . $risposta_trans[ 'URL_trans' ] . PHP_EOL, 3, LOG_FILE );
                     }
                 }
-                elseif ( $query_data->pay_method === "SY" ) { //Pagamanto con carta di credito
+                elseif ( $query_data->pay_method === "SY" ) { //Pagamento con Satispay
                     require_once( '../vendor/autoload.php' );
                     $Payment_Statispay = call_user_func_array( 'SatispayGetPayment', array( $query_data ) );
                     //if ( DEBUG == true ) {
                     error_log( date( '[Y-m-d H:i:s e] ' ) . "SATISPAY_WS JSON Payment : " . json_encode( $Payment_Statispay ) . PHP_EOL, 3, LOG_FILE ); //DEBUG
                     //}
+                    if ( empty( $Payment_Statispay ) ) {
+                        // Creazione pagamento Satispay fallita (credenziali mancanti o API non raggiungibile)
+                        $risposta_trans[ 'Esito_trans' ] = "KO";
+                        $risposta_trans[ 'Messaggio_trans' ] = "Pagamento Satispay non disponibile";
+                        $risposta_trans[ 'URL_trans' ] = "";
+                        $risposta[ 'Transazione' ] = $risposta_trans;
+                        $risposta_string = json_encode( $risposta );
+                        echo $risposta_string;
+                        exit;
+                    }
                     foreach ( $Payment_Statispay as $key => $value ) {
                         //$query_data->SY_ . $key = $value;
                         $query_data->$key = $value;
@@ -1117,7 +1127,17 @@ elseif ( $query_action->operation == "save" && $query_action->param == "donato" 
     echo $risposta_string;
 }
 elseif ( $query_action->operation == "get" && $query_action->param == "data" ) {
-    $riga_mysql = call_user_func_array( 'LeggiDati_mysql', array( $query_data ) ); // Scrivo l'anagrafica in mysql 
+    // Endpoint interno: restituisce PII del donatore. Richiede un token HMAC
+    // (basato su SALT_MAIL) per impedire l'enumerazione dei donatori via Id_a/CodTrans (IDOR).
+    $expected_token = hash_hmac( 'sha256', 'get_data', defined( 'SALT_MAIL' ) ? SALT_MAIL : '' );
+    $provided_token = isset( $query_data->token ) ? (string) $query_data->token : '';
+    if ( '' === $provided_token || !hash_equals( $expected_token, $provided_token ) ) {
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "DON_WS get/data: token non valido da IP " . ( $_SERVER[ 'REMOTE_ADDR' ] ?? '?' ) . PHP_EOL, 3, LOG_FILE );
+        http_response_code( 403 );
+        echo json_encode( array( 'error' => 'Accesso negato' ) );
+        exit;
+    }
+    $riga_mysql = call_user_func_array( 'LeggiDati_mysql', array( $query_data ) ); // Scrivo l'anagrafica in mysql
     //print_r($riga_mysql);
     $riga_mysql_array = ( array )$riga_mysql;
     $risposta_string = json_encode( $riga_mysql_array, JSON_UNESCAPED_UNICODE );

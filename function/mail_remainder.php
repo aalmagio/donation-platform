@@ -16,7 +16,7 @@ if ( isset( $_GET[ 'p' ] ) && $_GET[ 'p' ] == "Sm3moRato" ) {
         $query_recipient = "SELECT Donazione.importo, Donazione.pay_method, Donazione.CodTrans, Donazione.remainder, Anagrafica.Id_a, Anagrafica.nome, Anagrafica.cognome, Anagrafica.mail, Anagrafica.tel FROM Donazione LEFT JOIN Anagrafica ON Donazione.Id_a = Anagrafica.Id_a WHERE Donazione.esito = 'OK'  AND Donazione.remainder < " . $invio_n . " LIMIT 5;";
     } else {
         define( 'MN_REMINDER1_EMAIL_ID', 40 ); //Donato
-        $query_recipient = "SELECT Donazione.importo, Donazione.pay_method, Donazione.CodTrans, Donazione.remainder, Anagrafica.Id_a, Anagrafica.nome, Anagrafica.cognome, Anagrafica.mail, Anagrafica.tel FROM Donazione LEFT JOIN Anagrafica ON Donazione.Id_a = Anagrafica.Id_a WHERE Donazione.esito = 'OK'  AND Donazione.remainder < " . $invio_n . "LIMIT 100;";
+        $query_recipient = "SELECT Donazione.importo, Donazione.pay_method, Donazione.CodTrans, Donazione.remainder, Anagrafica.Id_a, Anagrafica.nome, Anagrafica.cognome, Anagrafica.mail, Anagrafica.tel FROM Donazione LEFT JOIN Anagrafica ON Donazione.Id_a = Anagrafica.Id_a WHERE Donazione.esito = 'OK'  AND Donazione.remainder < " . $invio_n . " LIMIT 100;";
     }
     //echo $query_recipient;
     if ( isset( $_GET[ 'm' ] ) && is_numeric( $_GET[ 'm' ] ) ) {

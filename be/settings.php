@@ -102,11 +102,6 @@ else{
     } else {
         echo "No settings found.";
     }
-    /*
-    $query_settings = "SELECT ENV, PARAMETER, `VALUE`, Descrizione FROM config WHERE Form = '" . LP . "' AND ENV ='" .$_POST['ENV']."' order by  PARAMETER;";
-    $settings = mysqli_query( $conn, $query_settings )or die( mysqli_error( $conn ) );
-    $param_settings = mysqli_fetch_assoc( $settings );
-    */
 }
 require( 'inc/head.inc.php' );
 ?>

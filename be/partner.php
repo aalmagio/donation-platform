@@ -64,16 +64,18 @@ $query_pticket =  "SELECT Ticket.Id_ticket,  Ticket.nome, Ticket.cognome, Ticket
 if (isset($_GET['ricerca']) &&$_GET['ricerca'] =="partner"){
     $query_pticket =  "SELECT Ticket.Id_ticket,  Ticket.nome, Ticket.cognome, Ticket.mail, Ticket.valido, Ticket.telefono, Partner.Nome AS RSPartner FROM `Ticket` LEFT JOIN Partner ON Ticket.Id_partner = Partner.Id_partner WHERE ";
     if ($_GET['partner'] !="ALL"){
-        $query_pticket = sprintf( "%s %s", $query_pticket, "Ticket.Id_partner=" .$_GET['partner']  );
+        $query_pticket = sprintf( "%s Ticket.Id_partner=%d", $query_pticket, (int) $_GET['partner'] );
     } else {
         $query_pticket = sprintf( "%s %s", $query_pticket, "Ticket.Id_partner > 0" );
     }
     if (trim($_GET['cognome']) !=""){
-        $query_pticket = sprintf( "%s %s", $query_pticket, " AND Ticket.cognome LIKE '%" .$_GET['cognome']."%'"  );
-    } 
+        $cognome_like = $conn->real_escape_string( $_GET['cognome'] );
+        $query_pticket = sprintf( "%s %s", $query_pticket, " AND Ticket.cognome LIKE '%" .$cognome_like."%'"  );
+    }
    if (trim($_GET['mail']) !=""){
-        $query_pticket = sprintf( "%s %s", $query_pticket, " AND Ticket.mail LIKE '%" .$_GET['mail']."%'"  );
-    }    
+        $mail_like = $conn->real_escape_string( $_GET['mail'] );
+        $query_pticket = sprintf( "%s %s", $query_pticket, " AND Ticket.mail LIKE '%" .$mail_like."%'"  );
+    }
 }
 
 $query_limit_pticket = sprintf( "%s LIMIT %d, %d", $query_pticket, $startRow_pticket, $maxRows_pticket );

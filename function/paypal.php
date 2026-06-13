@@ -7,26 +7,36 @@
 require '../inc/config.inc.php';
 require '../inc/data.inc.php';
 error_log( date( '[Y-m-d H:i:s e] ' ) . "paypal.php : " . $_SERVER['QUERY_STRING'] . PHP_EOL, 3, LOG_FILE );
+// Valido i parametri ricevuti da PayPal prima di usarli
+$pp_token = isset( $_GET[ 'token' ] ) ? (string) $_GET[ 'token' ] : '';
+if ( '' === $pp_token ) {
+  error_log( date( '[Y-m-d H:i:s e] ' ) . "paypal.php: token PayPal mancante" . PHP_EOL, 3, LOG_FILE );
+  header( "Location: " . FORM_ERROR_PAGE );
+  exit;
+}
 $connection = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME );
-if ( $connection->connect_errno ) {
-  trigger_error( "Connessione al server mySQL fallita: (" . $connection->connect_errno . ") " . $connection->connect_error, E_USER_ERROR );
+if ( !$connection || $connection->connect_errno ) {
+  error_log( date( '[Y-m-d H:i:s e] ' ) . "paypal.php: connessione DB fallita" . PHP_EOL, 3, LOG_FILE );
+  header( "Location: " . FORM_ERROR_PAGE );
+  exit;
 }
 // preparo lo statement
-if ( !( $stmt = $connection->prepare( "SELECT PayPalCheckout.CodTrans , PayPalCheckout.Id_OrderPayPal, PayPalCheckout.token_type , PayPalCheckout.access_token ,  
-    Donazione.* , 
+if ( !( $stmt = $connection->prepare( "SELECT PayPalCheckout.CodTrans , PayPalCheckout.Id_OrderPayPal, PayPalCheckout.token_type , PayPalCheckout.access_token ,
+    Donazione.* ,
     Anagrafica.*
-    FROM PayPalCheckout 
+    FROM PayPalCheckout
     LEFT JOIN Donazione
     ON PayPalCheckout.CodTrans= Donazione.CodTrans
     LEFT JOIN Anagrafica
     ON Donazione.Id_a = Anagrafica.Id_a
     WHERE Id_OrderPayPal = ? " ) ) ) {
-  trigger_error( "Prepare failed: (" . $connection->errno . ") " . $connection->error, E_USER_ERROR );
+  error_log( date( '[Y-m-d H:i:s e] ' ) . "paypal.php prepare failed: " . $connection->error . PHP_EOL, 3, LOG_FILE );
+  $connection->close();
+  header( "Location: " . FORM_ERROR_PAGE );
+  exit;
 }
 // associo i parametri ai placeholder
-if ( !$stmt->bind_param( 's', $_GET[ 'token' ] ) ) {
-  trigger_error( "Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
-}
+$stmt->bind_param( 's', $pp_token );
 // eseguo la query e chiudo
 if ( $stmt->execute() ) {
   $result = $stmt->get_result();
@@ -113,8 +123,12 @@ if ( $stmt->execute() ) {
 		
   }
 } else {
-  // Gestione errore PP    
-  trigger_error( "Execute failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
+  // Gestione errore PP
+  error_log( date( '[Y-m-d H:i:s e] ' ) . "paypal.php execute failed: " . $stmt->error . PHP_EOL, 3, LOG_FILE );
+  $stmt->close();
+  $connection->close();
+  header( "Location: " . FORM_ERROR_PAGE );
+  exit;
 }
 //var_dump($row);
 $stmt->close();
@@ -135,7 +149,7 @@ if (isset($response)){
 		error_log( date( '[Y-m-d H:i:s e] ' ) . "paypal.php - Esito esito mysql NON WA (".$row['esito'] ."): " . $response . PHP_EOL, 3, LOG_FILE );
 	}
 //}
-if ( "OK" == $_GET[ 'esito' ] && $_GET[ 'token' ] == $row[ 'Id_OrderPayPal' ] && ( !isset( $dati->PP->name ) || "UNPROCESSABLE_ENTITY" != $dati->PP->name ) ) {
+if ( "OK" == ( $_GET[ 'esito' ] ?? '' ) && $pp_token == $row[ 'Id_OrderPayPal' ] && ( !isset( $dati->PP->name ) || "UNPROCESSABLE_ENTITY" != $dati->PP->name ) ) {
   $dati->PP->PP_esito = "OK";
   $secret = md5($row['Id_a'] . SALT_MAIL );
   $redirect_url= $url_di_base."/function/mail.php?d=". $row['Id_a']. "&s=" . $secret ;

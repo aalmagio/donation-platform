@@ -97,7 +97,7 @@ function utf8ize( $d ) {
                         exit;
                     } else {
                         echo "Le password digitate non coincidono o sono pi&ugrave; corte di 8 caratteri. <br /> 
-  <a href=\"change_pwd.php?user=".$_GET[ 'user' ]."\">Reinserisci i dati</a>
+  <a href=\"change_pwd.php?user=".htmlspecialchars( $_GET[ 'user' ] ?? '', ENT_QUOTES, 'UTF-8' )."\">Reinserisci i dati</a>
   
 	</div>
 	
