@@ -83,8 +83,9 @@ if ( USE_GESTPAY == true ) { //GestPay
 			// set URL and other appropriate options
 			curl_setopt($ch_mail, CURLOPT_URL, $redirect_url);
 			curl_setopt($ch_mail, CURLOPT_HEADER, 0);
+			// Cattura l'output di mail.php invece di riversarlo nella pagina
+			curl_setopt($ch_mail, CURLOPT_RETURNTRANSFER, true);
 
-			// grab URL and pass it to the browser
 			$result_mail = curl_exec($ch_mail);
 
 			// close cURL resource, and free up system resources

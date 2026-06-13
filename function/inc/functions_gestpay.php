@@ -179,24 +179,26 @@ function ScriviOrderGestPay_mysql( $donazione ) {
     if ( DEBUG == true ) {
         error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviOrderGestPay_mysql Dati: " . strip_log_CC(json_encode( $donazione)) . PHP_EOL, 3, LOG_FILE ); //DEBUG
     }
-    $connection = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME );
-    if ( $connection->connect_errno ) {
-        trigger_error( "Connessione al server mySQL fallita: (" . $connection->connect_errno . ") " . $connection->connect_error, E_USER_ERROR );
+    // Normalizza i campi non ancora valorizzati (questa INSERT avviene prima del submit/3DS)
+    foreach ( array( 'transactionResult', 'transactionErrorCode', 'transactionErrorDescription', 'bankTransactionID', 'authorizationCode', 'paymentID', 'currency', 'country', 'company', 'tdLevel', 'alertCode', 'alertDescription', 'cvvPresent', 'maskedPAN', 'paymentMethod', 'productType', 'token', 'tokenExpiryMonth', 'tokenExpiryYear', 'paymentToken' ) as $p ) {
+        if ( !isset( $donazione->$p ) ) { $donazione->$p = ''; }
     }
-    // preparo lo statement
-    // shopTransactionID = CodTrans
-    /*if ( !( $stmt = $connection->prepare( "INSERT INTO GestPayREST (shopTransactionID, transactionResult , transactionErrorCode, transactionErrorDescription, bankTransactionID , authorizationCode , paymentID, currency , country , company, tdLevel , buyername , buyermail, riskResponseCode , riskResponseDescription, alertCode, alertDescription, cvvPresent, maskedPAN, paymentMethod, productType , token, tokenExpiryMonth, tokenExpiryYear, paymentToken) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" ) ) ) {*/
+    $connection = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME );
+    if ( !$connection || $connection->connect_errno ) {
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviOrderGestPay_mysql: connessione DB fallita" . PHP_EOL, 3, LOG_FILE );
+        return false;
+    }
+    // preparo lo statement (shopTransactionID = CodTrans)
     if ( !( $stmt = $connection->prepare( "INSERT INTO GestPayREST (shopTransactionID, transactionResult , transactionErrorCode, transactionErrorDescription, bankTransactionID , authorizationCode , paymentID, currency , country , company, tdLevel ,  alertCode, alertDescription, cvvPresent, maskedPAN, paymentMethod, productType , token, tokenExpiryMonth, tokenExpiryYear, paymentToken) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" ) ) ) {
-        trigger_error( "Prepare failed: (" . $connection->errno . ") " . $connection->error, E_USER_ERROR );
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviOrderGestPay_mysql prepare failed: " . $connection->error . PHP_EOL, 3, LOG_FILE );
+        $connection->close();
+        return false;
     }
     // associo i parametri ai placeholder
-    $cod_ese_sella = GP_COD_ESE;
-    if ( !$stmt->bind_param( 'sssssssssssssssssssss', $donazione->CodTrans, $donazione->transactionResult, $donazione->transactionErrorCode, $donazione->transactionErrorDescription, $donazione->bankTransactionID, $donazione->authorizationCode, $donazione->paymentID, $donazione->currency, $donazione->country, $donazione->company, $donazione->tdLevel, /* $donazione->buyer->name, $donazione->buyer->email, $donazione->risk->riskResponseCode, $donazione->risk->riskResponseDescription,*/ $donazione->alertCode, $donazione->alertDescription, $donazione->cvvPresent, $donazione->maskedPAN, $donazione->paymentMethod, $donazione->productType, $donazione->token, $donazione->tokenExpiryMonth, $donazione->tokenExpiryYear, $donazione->paymentToken ) ) {
-        trigger_error( "Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
-    }
+    $stmt->bind_param( 'sssssssssssssssssssss', $donazione->CodTrans, $donazione->transactionResult, $donazione->transactionErrorCode, $donazione->transactionErrorDescription, $donazione->bankTransactionID, $donazione->authorizationCode, $donazione->paymentID, $donazione->currency, $donazione->country, $donazione->company, $donazione->tdLevel, $donazione->alertCode, $donazione->alertDescription, $donazione->cvvPresent, $donazione->maskedPAN, $donazione->paymentMethod, $donazione->productType, $donazione->token, $donazione->tokenExpiryMonth, $donazione->tokenExpiryYear, $donazione->paymentToken );
     // eseguo la query e chiudo
     if ( !$stmt->execute() ) {
-        trigger_error( "Execute failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviOrderGestPay_mysql execute failed: " . $stmt->error . PHP_EOL, 3, LOG_FILE );
     }
     $codice_ordine = $stmt->insert_id;
     if ( DEBUG == true ) {
@@ -210,23 +212,23 @@ function ScriviOrderGestPay_mysql( $donazione ) {
 function AggiornaDonazioneNo3DGP( $transactionResult, $CodTrans ) { // Da aggregare a aggiornaEsitoDonazione
     //Unificare con aggiornaEsitoDonazione
     $connection = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME );
-    if ( $connection->connect_errno ) {
-        trigger_error( "Connessione al server mySQL fallita: (" . $connection->connect_errno . ") " . $connection->connect_error, E_USER_ERROR );
+    if ( !$connection || $connection->connect_errno ) {
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "AggiornaDonazioneNo3DGP: connessione DB fallita" . PHP_EOL, 3, LOG_FILE );
+        return false;
     }
     // preparo lo statement
     if ( !( $stmt = $connection->prepare( "UPDATE Donazione SET esito=? WHERE CodTrans=?;" ) ) ) {
-        trigger_error( "Prepare failed: (" . $connection->errno . ") " . $connection->error, E_USER_ERROR );
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "AggiornaDonazioneNo3DGP prepare failed: " . $connection->error . PHP_EOL, 3, LOG_FILE );
+        $connection->close();
+        return false;
     }
-    // associo i parametri ai placeholder
-    if ( !$stmt->bind_param( 'ss', $transactionResult, $CodTrans ) ) {
-        trigger_error( "Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
-    }
-    // eseguo la query e chiudo
+    $stmt->bind_param( 'ss', $transactionResult, $CodTrans );
     if ( !$stmt->execute() ) {
-        trigger_error( "Execute failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "AggiornaDonazioneNo3DGP execute failed: " . $stmt->error . PHP_EOL, 3, LOG_FILE );
     }
     $stmt->close();
     $connection->close();
+    return true;
 }
 
 function AggiornaGetPayREST( $donazione ) {
@@ -246,53 +248,51 @@ function AggiornaGetPayREST( $donazione ) {
         ];
     }
 
+    // Normalizza i campi eventualmente non valorizzati nella risposta GestPay
+    foreach ( array( 'transactionResult', 'transactionErrorCode', 'transactionErrorDescription', 'bankTransactionID', 'authorizationCode', 'currency', 'country', 'tdLevel', 'company', 'alertCode', 'alertDescription', 'cvvPresent', 'maskedPAN', 'paymentMethod', 'productType', 'token', 'tokenExpiryMonth', 'tokenExpiryYear' ) as $p ) {
+        if ( !isset( $donazione->$p ) ) { $donazione->$p = ''; }
+    }
+
     // 3. Connetto al DB
     $connection = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME );
-    if ( $connection->connect_errno ) {
-        trigger_error( "Connessione al server mySQL fallita: (" . $connection->connect_errno . ") " . $connection->connect_error, E_USER_ERROR );
+    if ( !$connection || $connection->connect_errno ) {
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "AggiornaGetPayREST: connessione DB fallita" . PHP_EOL, 3, LOG_FILE );
+        return false;
     }
     // preparo lo statement
     if ( !( $stmt = $connection->prepare( "UPDATE GestPayREST SET transactionResult = ?, transactionErrorCode = ?, transactionErrorDescription = ?, bankTransactionID = ?, authorizationCode = ?, currency = ?, country = ?, tdLevel = ?, company = ?, buyername = ?, buyermail = ?, riskResponseCode = ?, riskResponseDescription = ?, alertCode = ?, alertDescription = ?, cvvPresent = ?, maskedPAN = ?, PaymentMethod = ?, productType = ?, token = ?, tokenExpiryMonth = ?, tokenExpiryYear = ?  WHERE shopTransactionID=?;" ) ) ) {
-        trigger_error( "Prepare failed: (" . $connection->errno . ") " . $connection->error, E_USER_ERROR );
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "AggiornaGetPayREST prepare failed: " . $connection->error . PHP_EOL, 3, LOG_FILE );
+        $connection->close();
+        return false;
     }
-    if ( isset( $donazione->shopTransactionID ) && "" != $donazione->shopTransactionID ) {
-        // associo i parametri ai placeholder
-        if ( !$stmt->bind_param( 'sssssssssssssssssssssss', $donazione->transactionResult, $donazione->transactionErrorCode, $donazione->transactionErrorDescription, $donazione->bankTransactionID, $donazione->authorizationCode, $donazione->currency, $donazione->country, $donazione->tdLevel, $donazione->company, $donazione->buyer->name, $donazione->buyer->mail, $donazione->risk->riskResponseCode, $donazione->risk->riskResponseDescription, $donazione->alertCode, $donazione->alertDescription, $donazione->cvvPresent, $donazione->maskedPAN, $donazione->paymentMethod, $donazione->productType, $donazione->token, $donazione->tokenExpiryMonth, $donazione->tokenExpiryYear, $donazione->shopTransactionID ) ) {
-            trigger_error( "Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
-        }
-    } else {
-        // associo i parametri ai placeholder
-        if ( !$stmt->bind_param( 'sssssssssssssssssssssss', $donazione->transactionResult, $donazione->transactionErrorCode, $donazione->transactionErrorDescription, $donazione->bankTransactionID, $donazione->authorizationCode, $donazione->currency, $donazione->country, $donazione->tdLevel, $donazione->company, $donazione->buyer->name, $donazione->buyer->mail, $donazione->risk->riskResponseCode, $donazione->risk->riskResponseDescription, $donazione->alertCode, $donazione->alertDescription, $donazione->cvvPresent, $donazione->maskedPAN, $donazione->paymentMethod, $donazione->productType, $donazione->token, $donazione->tokenExpiryMonth, $donazione->tokenExpiryYear, $donazione->CodTrans ) ) {
-            trigger_error( "Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
-        }
-    }
-    // eseguo la query e chiudo
+    $where_key = ( isset( $donazione->shopTransactionID ) && "" != $donazione->shopTransactionID ) ? $donazione->shopTransactionID : $donazione->CodTrans;
+    $stmt->bind_param( 'sssssssssssssssssssssss', $donazione->transactionResult, $donazione->transactionErrorCode, $donazione->transactionErrorDescription, $donazione->bankTransactionID, $donazione->authorizationCode, $donazione->currency, $donazione->country, $donazione->tdLevel, $donazione->company, $donazione->buyer->name, $donazione->buyer->mail, $donazione->risk->riskResponseCode, $donazione->risk->riskResponseDescription, $donazione->alertCode, $donazione->alertDescription, $donazione->cvvPresent, $donazione->maskedPAN, $donazione->paymentMethod, $donazione->productType, $donazione->token, $donazione->tokenExpiryMonth, $donazione->tokenExpiryYear, $where_key );
     if ( !$stmt->execute() ) {
-        trigger_error( "Execute failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "AggiornaGetPayREST execute failed: " . $stmt->error . PHP_EOL, 3, LOG_FILE );
     }
     $stmt->close();
     $connection->close();
-
+    return true;
 }
 
 function aggiornaMandatoToken_mysql( $mandato ) {
     // connetto al db
     $connection = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME );
-    if ( $connection->connect_errno ) {
-        trigger_error( "Connessione al server mySQL fallita: (" . $connection->connect_errno . ") " . $connection->connect_error, E_USER_ERROR );
+    if ( !$connection || $connection->connect_errno ) {
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "aggiornaMandatoToken_mysql: connessione DB fallita" . PHP_EOL, 3, LOG_FILE );
+        return false;
     }
     // preparo lo statement
     if ( !( $stmt = $connection->prepare( "UPDATE Mandato SET Token=?, meseToken =?, annoToken=?, Errore =? WHERE Id_mandato=?;" ) ) ) {
-        trigger_error( "Prepare failed: (" . $connection->errno . ") " . $connection->error, E_USER_ERROR );
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "aggiornaMandatoToken_mysql prepare failed: " . $connection->error . PHP_EOL, 3, LOG_FILE );
+        $connection->close();
+        return false;
     }
-    // associo i parametri ai placeholder
-    if ( !$stmt->bind_param( 'ssssi', $mandato->GP_token, $mandato->GP_tokenExpiryMonth, $mandato->GP_tokenExpiryYear, $mandato->errore_mandato_Mentor, $mandato->Id_mandato ) ) {
-        trigger_error( "Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
-    }
-    // eseguo la query e chiudo
+    $stmt->bind_param( 'ssssi', $mandato->GP_token, $mandato->GP_tokenExpiryMonth, $mandato->GP_tokenExpiryYear, $mandato->errore_mandato_Mentor, $mandato->Id_mandato );
     if ( !$stmt->execute() ) {
-        trigger_error( "Execute failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "aggiornaMandatoToken_mysql execute failed: " . $stmt->error . PHP_EOL, 3, LOG_FILE );
     }
     $stmt->close();
     $connection->close();
+    return true;
 }

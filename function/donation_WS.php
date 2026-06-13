@@ -188,7 +188,8 @@ if ( $query_action->operation == "do" && $query_action->param == "transaction" )
                                                 }
                                                 $risposta[ 'AnagraficaMentor' ] = $risposta_ana_mentor;
                                             }
-                                            $redirect_url = FORM_THANK_YOU_PAGE;
+                                            // Passo CodTrans così grazie.php può recuperare la donazione (altrimenti rimbalza a errore)
+                                            $redirect_url = FORM_THANK_YOU_PAGE . "?CodTrans=" . $query_data->CodTrans;
                                             // transazione no 3D con esito positivo - FINE
                                         } else { // transazione no 3D con esito negativo
                                             if ( $query_data->centro == TESSERA_GIFT ) {
@@ -218,10 +219,9 @@ if ( $query_action->operation == "do" && $query_action->param == "transaction" )
 
                         } else { // Errore GP Create Order
                             $risposta_trans[ 'Esito_trans' ] = "KO";
-                            $risposta_trans[ 'GP_ErrorCode' ] = $GP_submit->error->code;
-                            //echo $GP_submit->error->code;
-                            $risposta_trans[ 'GP_ErrorDescription' ] = $GP_submit->error->description;
-                            //echo $GP_submit->error->description;
+                            $risposta_trans[ 'GP_ErrorCode' ] = $GP_order->error->code ?? '';
+                            $risposta_trans[ 'GP_ErrorDescription' ] = $GP_order->error->description ?? '';
+                            error_log( date( '[Y-m-d H:i:s e] ' ) . "GestPay CreateOrder errore: " . json_encode( $GP_order->error ?? null ) . PHP_EOL, 3, LOG_FILE );
                         }
                         //4 PP Creo token
                         //Gestione errore?
