@@ -375,7 +375,7 @@ $connection->close();
   </div>
   <?php } ?>
 
-  <?php if (isset($donazione_data['CodTrans'])) { ?>
+  <?php if (isset($donazione_data['CodTrans']) && trim($donazione_data['nota'] ?? '') === '') { ?>
   <div class="card">
     <p><strong>Vuoi lasciare un commento?</strong></p>
     <form method="post" action="grazie.php">
