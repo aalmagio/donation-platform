@@ -237,14 +237,32 @@ if ( $query_action->operation == "do" && $query_action->param == "transaction" )
                     //4 PP Creo token
                     $OAuth = CLIENT_ID_PP . ":" . SECRET_ID_PP;
                     $TokenPayPal = call_user_func( 'TokenPayPal', $OAuth );
+                    // Token non ottenuto (credenziali errate o API non raggiungibile): errore gestito
+                    if ( !is_array( $TokenPayPal ) || empty( $TokenPayPal[ 'access_token' ] ) ) {
+                        error_log( date( '[Y-m-d H:i:s e] ' ) . "PayPal: token non ottenuto - " . json_encode( $TokenPayPal ) . PHP_EOL, 3, LOG_FILE );
+                        $risposta_trans[ 'Esito_trans' ] = "KO";
+                        $risposta_trans[ 'Messaggio_trans' ] = "Pagamento PayPal non disponibile";
+                        $risposta_trans[ 'URL_trans' ] = "";
+                        $risposta[ 'Transazione' ] = $risposta_trans;
+                        echo json_encode( $risposta );
+                        exit;
+                    }
                     foreach ( $TokenPayPal as $key => $value ) { //scope,  access_token, token_type , app_id, expires_in, nonce
                         $query_data->$key = $value;
                     }
-                    //Gestione errore?
                     //5 PP Creo Ordine
                     $Id_OrderPayPal = call_user_func_array( 'CreateOrderPayPal', array( $query_data ) );
+                    // Ordine non creato: l'id PayPal ha formato tipo "5O190127TN364715T"
+                    if ( empty( $Id_OrderPayPal ) || !preg_match( '/^[A-Z0-9]{8,}$/', (string) $Id_OrderPayPal ) ) {
+                        error_log( date( '[Y-m-d H:i:s e] ' ) . "PayPal: creazione ordine fallita - " . json_encode( $Id_OrderPayPal ) . PHP_EOL, 3, LOG_FILE );
+                        $risposta_trans[ 'Esito_trans' ] = "KO";
+                        $risposta_trans[ 'Messaggio_trans' ] = "Creazione ordine PayPal fallita";
+                        $risposta_trans[ 'URL_trans' ] = "";
+                        $risposta[ 'Transazione' ] = $risposta_trans;
+                        echo json_encode( $risposta );
+                        exit;
+                    }
                     $query_data->Id_OrderPayPal = $Id_OrderPayPal;
-                    //Gestione errore
                     //6 Scrivo ordine nel DB
                     call_user_func_array( 'ScriviOrderPayPal_mysql', array( $query_data ) );
                     $redirect_URL = PP_REDIRECT . "/checkoutnow?token=" . $Id_OrderPayPal;

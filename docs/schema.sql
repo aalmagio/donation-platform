@@ -139,6 +139,21 @@ CREATE TABLE IF NOT EXISTS `PayPalCheckout` (
   `Id_OrderPayPal` VARCHAR(64),               -- order/token PayPal
   `token_type` VARCHAR(32),
   `access_token` TEXT,
+  -- Dati di cattura (popolati da aggiornaOrdinePP dopo il pagamento)
+  `Payment` VARCHAR(64),                       -- id della capture
+  `Status` VARCHAR(32),
+  `gross_amount_currency_code` VARCHAR(8),
+  `gross_amount_value` VARCHAR(16),
+  `paypal_fee_currency_code` VARCHAR(8),
+  `paypal_fee_value` VARCHAR(16),
+  `net_amount_currency_code` VARCHAR(8),
+  `net_amount_value` VARCHAR(16),
+  `create_time` VARCHAR(40),
+  `update_time` VARCHAR(40),
+  `PP_given_name` VARCHAR(100),
+  `PP_surname` VARCHAR(100),
+  `PP_email_address` VARCHAR(255),
+  `payer_id` VARCHAR(64),
   `data` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`Id`),
   KEY `idx_codtrans` (`CodTrans`),

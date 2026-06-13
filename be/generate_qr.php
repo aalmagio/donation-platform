@@ -35,7 +35,7 @@ if ( isset( $_POST[ 'qrid' ] ) ) { // Controllo Satispay
       ]
     );
 
-    $qrcode = (new QRCode($options))->render($url_di_base.'/ticket.php?d='.$_POST[ 'qrid' ].'&s='.$secret.'','../img/qr/'.$secret.'.jpg' );
+    $qrcode = (new QRCode($options))->render($url_di_base.'/ticket.php?d='.$_POST[ 'qrid' ].'&s='.$secret.'', dirname(__DIR__).'/img/qr/'.$secret.'.jpg' );
     
 } 
 ?>

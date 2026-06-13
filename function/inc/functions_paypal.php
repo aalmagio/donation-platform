@@ -125,56 +125,44 @@ function CreateOrderPayPal( $donazione ) {
 function ScriviOrderPayPal_mysql( $donazione ) {
     // connetto al db
     $connection = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME );
-    if ( $connection->connect_errno ) {
-        trigger_error( "Connessione al server mySQL fallita: (" . $connection->connect_errno . ") " . $connection->connect_error, E_USER_ERROR );
+    if ( !$connection || $connection->connect_errno ) {
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviOrderPayPal_mysql: connessione DB fallita" . PHP_EOL, 3, LOG_FILE );
+        return false;
     }
     // preparo lo statement
     if ( !( $stmt = $connection->prepare( "INSERT INTO PayPalCheckout (CodTrans, Id_OrderPayPal, token_type, access_token) VALUES(?,?,?,?);" ) ) ) {
-        trigger_error( "Prepare failed: (" . $connection->errno . ") " . $connection->error, E_USER_ERROR );
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviOrderPayPal_mysql prepare failed: " . $connection->error . PHP_EOL, 3, LOG_FILE );
+        $connection->close();
+        return false;
     }
-    // associo i parametri ai placeholder
-    if ( !$stmt->bind_param( 'ssss', $donazione->CodTrans, $donazione->Id_OrderPayPal, $donazione->token_type, $donazione->access_token ) ) {
-        trigger_error( "Binding parameters failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
-    }
-    // eseguo la query e chiudo
+    $stmt->bind_param( 'ssss', $donazione->CodTrans, $donazione->Id_OrderPayPal, $donazione->token_type, $donazione->access_token );
     if ( !$stmt->execute() ) {
-        trigger_error( "Execute failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviOrderPayPal_mysql execute failed: " . $stmt->error . PHP_EOL, 3, LOG_FILE );
     }
     $stmt->close();
     $connection->close();
+    return true;
 }
 
 function aggiornaOrdinePP( $donazione ) {
     // connetto al db
     $connection = mysqli_connect( DB_IP, DB_USER, DB_PASSWORD, DB_DBNAME );
-    if ( $connection->connect_errno ) {
-        trigger_error( "Connessione al server mySQL fallita: (" . $connection->connect_errno . ") " . $connection->connect_error, E_USER_ERROR );
-        if ( DEBUG == true ) {
-            error_log( date( '[Y-m-d H:i:s e] ' ) . "Connessione al server mySQL fallita: (" . $connection->connect_errno . ") " . $connection->connect_error . PHP_EOL, 3, LOG_FILE );
-        }
+    if ( !$connection || $connection->connect_errno ) {
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "aggiornaOrdinePP: connessione DB fallita" . PHP_EOL, 3, LOG_FILE );
+        return false;
     }
     // preparo lo statement
     if ( !( $stmt = $connection->prepare( "UPDATE PayPalCheckout SET Payment=?, gross_amount_currency_code=?, gross_amount_value=?, paypal_fee_currency_code=?, paypal_fee_value=?, net_amount_currency_code=?, net_amount_value=?, create_time=?, update_time=?, PP_given_name=?, PP_surname=?, PP_email_address=?, payer_id=?, Status=?  WHERE CodTrans=?;" ) ) ) {
-        trigger_error( "Prepare failed: (" . $connection->errno . ") " . $connection->error, E_USER_ERROR );
-        if ( DEBUG == true ) {
-            error_log( date( '[Y-m-d H:i:s e] ' ) . "Prepare failed: (" . $connection->connect_errno . ") " . $connection->connect_error . PHP_EOL, 3, LOG_FILE );
-        }
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "aggiornaOrdinePP prepare failed: " . $connection->error . PHP_EOL, 3, LOG_FILE );
+        $connection->close();
+        return false;
     }
     // associo i parametri ai placeholder
-    if ( !$stmt->bind_param( 'sssssssssssssss', $donazione->Payment, $donazione->gross_amount_currency_code, $donazione->gross_amount_value, $donazione->paypal_fee_currency_code, $donazione->paypal_fee_value, $donazione->net_amount_currency_code, $donazione->net_amount_value, $donazione->create_time, $donazione->update_time, $donazione->PP_given_name, $donazione->PP_surname, $donazione->PP_email_address, $donazione->payer_id, $donazione->Status, $donazione->CodTrans ) ) {
-        trigger_error( "Binding parameters failed: (" . $stmt->errno . ") " . $errno->error, E_USER_ERROR );
-        if ( DEBUG == true ) {
-            error_log( date( '[Y-m-d H:i:s e] ' ) . "Binding parameters failed: (" . $stmt->errno . ") " . $errno->error . PHP_EOL, 3, LOG_FILE );
-        }
-
-    }
-    // eseguo la query e chiudo
+    $stmt->bind_param( 'sssssssssssssss', $donazione->Payment, $donazione->gross_amount_currency_code, $donazione->gross_amount_value, $donazione->paypal_fee_currency_code, $donazione->paypal_fee_value, $donazione->net_amount_currency_code, $donazione->net_amount_value, $donazione->create_time, $donazione->update_time, $donazione->PP_given_name, $donazione->PP_surname, $donazione->PP_email_address, $donazione->payer_id, $donazione->Status, $donazione->CodTrans );
     if ( !$stmt->execute() ) {
-        trigger_error( "Execute failed: (" . $stmt->errno . ") " . $stmt->error, E_USER_ERROR );
-        if ( DEBUG == true ) {
-            error_log( date( '[Y-m-d H:i:s e] ' ) . "Binding parameters failed: (" . $stmt->errno . ") " . $errno->error . PHP_EOL, 3, LOG_FILE );
-        }
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "aggiornaOrdinePP execute failed: " . $stmt->error . PHP_EOL, 3, LOG_FILE );
     }
     $stmt->close();
     $connection->close();
+    return true;
 }

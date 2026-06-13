@@ -300,7 +300,16 @@ if ("N" == $emailuserdata->ringraziata){
       ]
     );
 
-    $qrcode = (new QRCode($options))->render($url_di_base.'/ticket.php?d='.$_GET[ 'd' ].'&s='.$secret.'','../img/qr/'.$secret.'.jpg' );
+    // La generazione del QR non deve mai bloccare la pagina di ringraziamento:
+    // se fallisce (permessi/filesystem) si logga e si prosegue senza QR.
+    $qr_dir = dirname(__DIR__).'/img/qr/';
+    if ( !is_dir( $qr_dir ) ) { @mkdir( $qr_dir, 0775, true ); }
+    try {
+        $qrcode = (new QRCode($options))->render($url_di_base.'/ticket.php?d='.$_GET[ 'd' ].'&s='.$secret, $qr_dir.$secret.'.jpg' );
+    } catch ( \Throwable $e ) {
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "mail.php: generazione QR fallita: " . $e->getMessage() . PHP_EOL, 3, EM_DEBUG_LOG_FILE );
+        $qrcode = '';
+    }
 
     switch ($emailuserdata->pay_method) {
                 case 'PP':
@@ -450,13 +459,13 @@ if ("N" == $emailuserdata->ringraziata){
             $mail->Body = file_get_contents('../email/'.FORM_LANG.'/index.singola.html');
             // Sostituzione
             $indirizzo="";
-            if ($emailuserdata->indirizzo!="") $indirizzo .= $emailuserdata->indirizzo. ' '. $emailuserdata->civico. '<br>';
-            if ($emailuserdata->cap!="") $indirizzo .= $emailuserdata->cap;
-            if ($emailuserdata->citta!="") $indirizzo .= ' '. ucfirst(strtolower($emailuserdata->citta));
-            if ($emailuserdata->provincia!="") $indirizzo .= ' ('. strtoupper($emailuserdata->provincia.')');
+            if (($emailuserdata->indirizzo ?? "")!="") $indirizzo .= $emailuserdata->indirizzo. ' '. ($emailuserdata->civico ?? ''). '<br>';
+            if (($emailuserdata->cap ?? "")!="") $indirizzo .= $emailuserdata->cap;
+            if (($emailuserdata->citta ?? "")!="") $indirizzo .= ' '. ucfirst(strtolower($emailuserdata->citta));
+            if (($emailuserdata->provincia ?? "")!="") $indirizzo .= ' ('. strtoupper($emailuserdata->provincia).')';
             $datipersonali="";
-            if ($emailuserdata->tel!="") $datipersonali .= '<strong>telefono</strong>: '. $emailuserdata->tel;
-            if ($emailuserdata->mail!="") $datipersonali .= '<br><strong>email</strong>: '. strtolower($emailuserdata->mail);
+            if (($emailuserdata->tel ?? "")!="") $datipersonali .= '<strong>telefono</strong>: '. $emailuserdata->tel;
+            if (($emailuserdata->mail ?? "")!="") $datipersonali .= '<br><strong>email</strong>: '. strtolower($emailuserdata->mail);
 
 
 
@@ -523,6 +532,11 @@ if(isset($_GET['c']) && $_GET['c']== "cb"){
    }
 
 }else{
+// Se la donazione era già stata processata (ringraziata=Y), $redirect_url non è impostato:
+// la donazione è comunque valida, quindi si rimanda alla pagina di ringraziamento.
+if ( !isset( $redirect_url ) ) {
+    $redirect_url = FORM_THANK_YOU_PAGE . "?d=" . $emailuserdata->Id_a . "&s=" . $_GET[ 's' ];
+}
 header( "Location: " . $redirect_url );
 exit;
 }

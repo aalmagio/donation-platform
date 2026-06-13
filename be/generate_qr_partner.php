@@ -35,7 +35,7 @@ if ( isset( $_POST[ 'qrid' ] ) ) { // Controllo Satispay
       ]
     );
 
-    $qrcode = (new QRCode($options))->render($url_di_base.'/ticket.php?d='.$_POST[ 'qrid' ].'&s='.$secret.'&t=partner','../img/qr/par_'.$secret.'.jpg' );
+    $qrcode = (new QRCode($options))->render($url_di_base.'/ticket.php?d='.$_POST[ 'qrid' ].'&s='.$secret.'&t=partner', dirname(__DIR__).'/img/qr/par_'.$secret.'.jpg' );
     //$secret = md5( "partner" . $codice_ticket . SALT_MAIL  );
     // "temp.qr_MN" => $url_di_base . '/ticket.php?d=' . $codice_ticket . '&s=' . $secret . '&t=partner'
 } 

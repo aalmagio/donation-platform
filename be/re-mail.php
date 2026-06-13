@@ -210,7 +210,7 @@ $options = new QROptions(
   ]
 );
 
-$qrcode = (new QRCode($options))->render($url_di_base.'/ticket.php?d='.$_GET[ 'd' ].'&s='.$secret.'','../img/qr/'.$secret.'.jpg' );
+$qrcode = (new QRCode($options))->render($url_di_base.'/ticket.php?d='.$_GET[ 'd' ].'&s='.$secret.'', dirname(__DIR__).'/img/qr/'.$secret.'.jpg' );
 
 switch ($emailuserdata->pay_method) {
             case 'PP':
