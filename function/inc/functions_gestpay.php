@@ -12,11 +12,16 @@ function CreateOrderGestPay( $dati ) {
     $dati_GP->responseURLs->buyerOK = GP_BUYEROK;
     $dati_GP->responseURLs->buyerKO = GP_BUYERKO;
     $dati_GP->responseURLs->serverNotificationURL = GP_NOTIFURL;
-    if ( "regular" == $dati->GPtransactionType ) {
+    if ( "regular" == ( $dati->GPtransactionType ?? '' ) ) {
         $dati_GP->transDetails = new stdClass();
         $dati_GP->transDetails->type = "08"; //Mail order
-        //$dati_GP->transDetails->type  ="01F"; //Recurring first        
-        //$dati_GP->transDetails->type  ="03F"; //Unscheduled first 
+        //$dati_GP->transDetails->type  ="01F"; //Recurring first
+        //$dati_GP->transDetails->type  ="03F"; //Unscheduled first
+        // Richiesta di tokenizzazione della carta per gli addebiti ricorrenti futuri.
+        // In GestPay/Axerve REST il token va richiesto nella createPayment.
+        if ( empty( $dati->token ) ) {       // solo al primo addebito (quando uso la carta, non un token già esistente)
+            $dati_GP->requestToken = "MASKEDPAN";
+        }
     }
     /*else{
            $dati_GP->transDetails  = new stdClass();
@@ -116,7 +121,7 @@ function SubmitOrderGestPay( $dati ) {
     curl_close( $curl );
     if ( DEBUG == true ) {
         error_log( date( '[Y-m-d H:i:s e] ' ) . "DON_WS GP SubmitOrderGestPay Stringa: " . strip_log_CC( $data_string ) . PHP_EOL, 3, LOG_FILE ); //DEBUG
-        //error_log( date( '[Y-m-d H:i:s e] ' ) . "GP SubmitOrderGestPay Risposta: " . json_decode( $response ) . PHP_EOL, 3, LOG_FILE ); //DEBUG
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "GP SubmitOrderGestPay Risposta: " . strip_log_CC( (string) $response ) . PHP_EOL, 3, LOG_FILE ); //DEBUG
     }
     if ( $err ) {
         echo "cURL Error #:" . $err;
