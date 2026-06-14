@@ -149,9 +149,9 @@ function CleanMyJSON( $json ) {
     return ( preg_replace( '/("[a-zA-Z0-9_\-]+"\s*+:\s*(null|"\s*"|NULL),\s*)*/', '', $json ) );
 }
 
-// CODICE FISCALE 
+// CODICE FISCALE
 //https://github.com/nigrosimone/CodiceFiscale
-require '../lib/CodiceFiscale.php';
+require_once dirname( dirname( __DIR__ ) ) . '/lib/CodiceFiscale.php';
 
 function checkIBAN( $iban ) {
     //CREDITS: https://stackoverflow.com/questions/20983339/validate-iban-php

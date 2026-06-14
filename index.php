@@ -56,7 +56,18 @@ $client_ip = $_SERVER['REMOTE_ADDR'] ?? '';
 
       <!-- STEP 2: metodo di pagamento e importo -->
       <div id="step2" class="step">
-        <fieldset class="radio-buttons">
+        <?php if (defined('USE_GESTPAY') && USE_GESTPAY == true) { ?>
+        <!-- Tipo di donazione: una tantum o ricorrente (la ricorrente richiede carta di credito) -->
+        <fieldset class="radio-buttons" id="freqChoice">
+          <legend class="form-legend">Tipo di donazione</legend>
+          <label class="radio-option"><input type="radio" name="freq_choice" value="oneoff" checked> Una tantum</label>
+          <label class="radio-option"><input type="radio" name="freq_choice" value="1"> Ogni mese</label>
+          <label class="radio-option"><input type="radio" name="freq_choice" value="12"> Ogni anno</label>
+        </fieldset>
+        <p id="regularHint" style="display:none;color:var(--brand-muted);font-size:.85rem">Le donazioni ricorrenti sono addebitate su carta di credito; potrai sospenderle in qualsiasi momento contattandoci.</p>
+        <?php } ?>
+
+        <fieldset class="radio-buttons" id="payMethods">
           <legend class="form-legend"><?php echo $form_conf['legend']['pay_method']; ?></legend>
           <?php if (defined('USE_PAYPAL') && USE_PAYPAL == true) { ?>
           <label class="radio-option">
@@ -114,6 +125,7 @@ $client_ip = $_SERVER['REMOTE_ADDR'] ?? '';
         <input type="text" id="nota" name="nota" maxlength="200" placeholder="Commento" class="text-field">
 
         <input type="hidden" id="tipo_donazione" name="tipo_donazione" value="oneoff">
+        <input type="hidden" id="frequenza" name="frequenza" value="">
         <input type="hidden" id="IP" name="IP" value="<?php echo htmlspecialchars($client_ip); ?>">
         <input type="hidden" id="req_fields" name="req_fields" value="nome,cognome,mail,tel">
         <button type="submit" class="btn">Dona!</button>
@@ -189,6 +201,27 @@ $(document).ready(function() {
         $('#altro_importo').toggle($(this).val() === 'altro');
     });
 
+    // Tipo donazione: ricorrente => forza carta di credito (unico metodo con tokenizzazione)
+    $('input[name="freq_choice"]').change(function() {
+        var v = $(this).val();
+        if (v === 'oneoff') {
+            $('#tipo_donazione').val('oneoff');
+            $('#frequenza').val('');
+            $('#payMethods .radio-option').show();
+            $('#regularHint').hide();
+        } else {
+            $('#tipo_donazione').val('regular');
+            $('#frequenza').val(v); // 1 = mensile, 12 = annuale
+            // Solo carta: nascondo gli altri metodi e seleziono CC
+            $('#payMethods .radio-option').each(function() {
+                var isCC = $(this).find('input[name="pay_method"]').val() === 'CC';
+                $(this).toggle(isCC);
+            });
+            $('#payMethods input[name="pay_method"][value="CC"]').prop('checked', true).trigger('change');
+            $('#regularHint').show();
+        }
+    });
+
     $('#donationForm').on('submit', function(e) {
         e.preventDefault();
 
@@ -200,10 +233,15 @@ $(document).ready(function() {
             alert('Per favore, seleziona un importo.');
             return false;
         }
+        var isRegular = $('#tipo_donazione').val() === 'regular';
+        if (isRegular && $('input[name="pay_method"]:checked').val() !== 'CC') {
+            alert('Le donazioni ricorrenti sono possibili solo con carta di credito.');
+            return false;
+        }
 
         var formData = {
             operation: "do",
-            param: "transaction",
+            param: isRegular ? "regular" : "transaction",
             data: {
                 nome: $('#nome').val(),
                 cognome: $('#cognome').val(),
@@ -217,6 +255,7 @@ $(document).ready(function() {
                 cvv: $('#cvv').val(),
                 privacy: $('#privacy').val(),
                 tipo_donazione: $('#tipo_donazione').val(),
+                frequenza: $('#frequenza').val(),
                 IP: $('#IP').val(),
                 importo: $('input[name="importo"]:checked').val(),
                 importo_liber: $('#importolibero').val(),

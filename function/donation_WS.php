@@ -358,6 +358,7 @@ if ( $query_action->operation == "do" && $query_action->param == "transaction" )
             if ( $query_data->pay_method === "CC" ) { //Ricorrente  con carta di credito
                 if ( USE_GESTPAY == true ) {
                     $query_data->GPtransactionType = "regular";
+                    $query_data->metodo = "CC"; // mandato a carta (per il cron di addebito ricorrente)
                     //3 Scrivo donazione in mysql con id anagrfica (2) (Se ho scritto l'anagrafica)
                     $id_donazione = call_user_func_array( 'ScriviDonazione_mysql', array( $query_data ) ); //Scrivo la donazione in mysql
                     if ( preg_match( "/^[A-Z]{1}-[0-9]{17}-[A-Z]{2}/", $id_donazione ) ) { //Verifico codice transazione (formato D-20170701608524665-DD)
@@ -387,26 +388,9 @@ if ( $query_action->operation == "do" && $query_action->param == "transaction" )
                                 $risposta_order[ 'Esito_GestPay' ] = "OK";
                                 $risposta_order[ 'Messaggio_GestPay' ] = "Creazione dell'ordine di GestPay " . $query_data->paymentID;
                                 $risposta_order[ 'CodOrd_GestPay' ] = $query_data->paymentToken;
-                                //6 Genero Token
-                                $GP_token = call_user_func_array( 'GeneraTokenGestPay', array( $query_data ) );
-                                foreach ( $GP_token->payload as $k => $v ) {
-                                    if ( is_string( $k ) ) {
-                                        $query_data->$k = $v;
-                                    } else {
-                                        foreach ( $k->payload as $k1 => $v1 ) {
-                                            $query_data->$k1 = $v1;
-                                        }
-                                    }
-                                }
-                                $query_data->GP_token = $query_data->token;
-                                $query_data->GP_tokenExpiryMonth = $query_data->tokenExpiryMonth;
-                                $query_data->GP_tokenExpiryYear = $query_data->tokenExpiryYear;
-                                $risposta_token[ 'Token_Result' ] = "OK";
-                                $risposta_token[ 'Messaggio_Token' ] = $query_data->authorizationCodeDescription;
-                                $risposta_token[ 'id_Token' ] = $query_data->authorizationErrorCode;
-                                if ( $GP_token->payload->transactionResult == 'OK' ) { // Se ho creato il Token - Inzio 
-                                    //7 Aggiono il mandato con i dati del TOKEN in Mysql
-                                    $up_mandatoToken = call_user_func_array( 'aggiornaMandatoToken_mysql', array( $query_data ) );
+                                // Il primo addebito (submit) addebita la prima rata e, grazie a requestToken,
+                                // restituisce il token della carta per gli addebiti ricorrenti futuri.
+                                if ( true ) {
                                     if ( USE_MENTOR == true ) {
                                         //Verifica API -INZIO
                                         $url_ch = MENTOR_API_URL . "/wsc_table.ashx";
@@ -479,6 +463,14 @@ if ( $query_action->operation == "do" && $query_action->param == "transaction" )
                                                 }
                                             }
                                         }
+                                        // Se la carta è stata tokenizzata, salvo il token nel mandato per gli addebiti ricorrenti
+                                        if ( !empty( $query_data->token ) ) {
+                                            $query_data->GP_token = $query_data->token;
+                                            $query_data->GP_tokenExpiryMonth = $query_data->tokenExpiryMonth ?? '';
+                                            $query_data->GP_tokenExpiryYear = $query_data->tokenExpiryYear ?? '';
+                                            $query_data->errore_mandato_Mentor = '';
+                                            call_user_func_array( 'aggiornaMandatoToken_mysql', array( $query_data ) );
+                                        }
                                         //17 Scrivo l'ordine GestPay in mySQL
                                         $id_order = call_user_func_array( 'ScriviOrderGestPay_mysql', array( $query_data ) ); // Scrivo l'anagrafica in mysql
                                         if ( is_numeric( $id_order ) ) {
@@ -511,7 +503,11 @@ if ( $query_action->operation == "do" && $query_action->param == "transaction" )
                                                         }
                                                         $risposta[ 'DonazioneMentor' ] = $risposta_dona_mentor;
                                                     }
-                                                    $redirect_url = FORM_THANK_YOU_PAGE;
+                                                    // Primo addebito ricorrente OK: attivo il mandato e calcolo la prossima data
+                                                    if ( isset( $query_data->Id_mandato ) ) {
+                                                        call_user_func_array( 'attivaMandato_mysql', array( $query_data->Id_mandato, $query_data->frequenza ?? 1 ) );
+                                                    }
+                                                    $redirect_url = FORM_THANK_YOU_PAGE . "?CodTrans=" . $query_data->CodTrans;
                                                     // transazione no 3D con esito positivo - FINE
                                                 } else { // transazione no 3D con esito negativo
                                                     if ( USE_MENTOR == true ) {
@@ -532,27 +528,23 @@ if ( $query_action->operation == "do" && $query_action->param == "transaction" )
                                                 $risposta_trans[ 'URL_trans' ] = $redirect_url;
                                                 $query_data->EsitoDonazione = $query_data->transactionResult;
                                             }
+                                            $risposta[ 'Transazione' ] = $risposta_trans;
                                         }
-                                        //print_r($GP_submit);  
+                                        //print_r($GP_submit);
                                     } else { //Errore GP Submit Order
-                                        echo $GP_submit->error->code;
-                                        echo $GP_submit->error->description;
-
+                                        $risposta_trans[ 'Esito_trans' ] = "KO";
+                                        $risposta_trans[ 'GP_ErrorCode' ] = $GP_submit->error->code ?? '';
+                                        $risposta_trans[ 'GP_ErrorDescription' ] = $GP_submit->error->description ?? '';
+                                        $risposta[ 'Transazione' ] = $risposta_trans;
+                                        error_log( date( '[Y-m-d H:i:s e] ' ) . "GestPay regular Submit errore: " . json_encode( $GP_submit->error ?? null ) . PHP_EOL, 3, LOG_FILE );
                                     }
-                                } // Se ho creato l'ordine -FINE
-                                else { // Errore GP Create Order
-                                    $risposta_token[ 'Token_Result' ] = "KO";
-                                    $risposta_token[ 'Messaggio_Token' ] = $query_data->authorizationCodeDescription;
-                                    $risposta_token[ 'id_Token' ] = $query_data->authorizationErrorCode;
-                                }
-                                $risposta[ 'Token' ] = $risposta_token;
+                                } // fine primo addebito
                             } // Se ho creato l'ordine -FINE
                             else { // Errore GP Create Order
                                 $risposta_order[ 'Esito_GestPay' ] = "KO";
                                 $risposta_order[ 'Messaggio_GestPay' ] = "Si &egrave; verificato un errore nella creazione dell'ordine di GestPay: " . $GP_order->error->code;
                                 $risposta_order[ 'CodOrd_GestPay' ] = "";
                             }
-                            $risposta[ 'OrderGestPay' ];
                         } else { // Errore Mandato
                             $risposta_mandato[ 'Esito_mandato_mysql' ] = "KO";
                             $risposta_mandato[ 'Messaggio_mandato_mysql' ] = "Si &egrave; verificato un errore nella scrittura del mandato in MYSQL " . $id_mandato;
@@ -677,6 +669,16 @@ elseif ( $query_action->operation == "save" && $query_action->param == "GestPay3
     // UPDATE GetPayREST - FINE
     if ( $query_data->TransactionResult == "OK" ) {
         $query_data->EsitoDonazione = $query_data->TransactionResult;
+        // Se è una donazione regolare, attivo il mandato del donatore dopo il 3DS andato a buon fine
+        // e salvo l'eventuale token della carta restituito da GetOrderGestPay (per gli addebiti ricorrenti).
+        if ( isset( $query_data->tipo ) && $query_data->tipo == "regular" && isset( $query_data->Id_a ) ) {
+            call_user_func_array( 'attivaMandatoDonatore_mysql', array(
+                $query_data->Id_a,
+                $query_data->token ?? '',
+                $query_data->tokenExpiryMonth ?? '',
+                $query_data->tokenExpiryYear ?? ''
+            ) );
+        }
         if ( USE_MENTOR == true ) {
             //6 Scrivo l'anagrafica in Mentor (se la transazione è andata a buon fine)
             $id_anagrafica_mentor = call_user_func_array( 'scriviAnagrafica_mentor', array( $query_data ) ); // Scrivo l'anagrafica in mentor

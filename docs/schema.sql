@@ -94,14 +94,37 @@ CREATE TABLE IF NOT EXISTS `Donazione` (
 CREATE TABLE IF NOT EXISTS `Mandato` (
   `Id_mandato` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `Id_a` INT UNSIGNED NOT NULL,
-  `frequenza` VARCHAR(4),                     -- 1 = mensile, 12 = annuale
+  `codiceDonatore` VARCHAR(64),
+  `codiceCampanga` VARCHAR(64),               -- (sic) codice campagna
+  `codiceCentro` VARCHAR(16),
+  `codiceCanale` VARCHAR(16),
   `importo` DECIMAL(10,2),
-  `Token` VARCHAR(128),
+  `frequenza` VARCHAR(4),                     -- 1 = mensile, 12 = annuale
+  `metodo` VARCHAR(8),                        -- CC (carta) o SD (SDD)
+  `IBAN` VARCHAR(34),
+  `BIC` VARCHAR(16),
+  `Token` VARCHAR(128),                       -- token carta GestPay per addebiti ricorrenti
   `meseToken` VARCHAR(2),
-  `annoToken` VARCHAR(2),
+  `annoToken` VARCHAR(4),
   `nomeTitolare` VARCHAR(128),
+  `codiceFiscaleTitolare` VARCHAR(16),
+  `indirizzoTitolare` VARCHAR(255),
+  `localitaTitolare` VARCHAR(100),
+  `provinciaTitolare` VARCHAR(4),
+  `cap` VARCHAR(10),
+  `note` VARCHAR(255),
+  `Errore` VARCHAR(255),
+  `codiceMentor` VARCHAR(64),                 -- id mandato nel CRM (opzionale)
+  -- Colonne operative per il cron di addebito ricorrente
+  `stato` VARCHAR(16) DEFAULT 'in_attesa',    -- in_attesa | attivo | sospeso | cancellato
+  `prossima_data` DATE NULL,                  -- data del prossimo addebito
+  `ultimo_addebito` DATETIME NULL,
+  `ultimo_esito` VARCHAR(8) NULL,             -- OK | KO dell'ultimo addebito
+  `n_addebiti` INT DEFAULT 0,                 -- numero di rate addebitate
+  `data_creazione` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`Id_mandato`),
-  KEY `idx_id_a` (`Id_a`)
+  KEY `idx_id_a` (`Id_a`),
+  KEY `idx_stato_data` (`stato`, `prossima_data`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------

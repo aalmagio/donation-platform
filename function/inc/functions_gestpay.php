@@ -59,22 +59,32 @@ function SubmitOrderGestPay( $dati ) {
 
     $GP_submit->paymentTypeDetails = new stdClass();
     $GP_submit->paymentTypeDetails->creditcard = new stdClass();
-    if ( "oneoff" == $dati->GPtransactionType ) {
+    // Tre modalità:
+    // 1) addebito ricorrente successivo: ho già il token, niente carta (MIT, no 3DS)
+    // 2) primo addebito ricorrente: invio la carta E richiedo il token (requestToken) per i futuri addebiti
+    // 3) donazione singola (oneoff): invio solo la carta
+    if ( !empty( $dati->token ) && ( !isset( $dati->cartan ) || trim( $dati->cartan ) === '' ) ) {
+        // (1) Pagamento con token salvato
+        $GP_submit->paymentTypeDetails->creditcard->number = "";
+        $GP_submit->paymentTypeDetails->creditcard->token = $dati->token;
+        $GP_submit->paymentTypeDetails->creditcard->requestToken = "";
+        $GP_submit->paymentTypeDetails->creditcard->expMonth = "";
+        $GP_submit->paymentTypeDetails->creditcard->expYear = "";
+        $GP_submit->paymentTypeDetails->creditcard->CVV = "";
+    } else {
+        // (2)/(3) Pagamento con carta
         $GP_submit->paymentTypeDetails->creditcard->number = $dati->cartan;
         $GP_submit->paymentTypeDetails->creditcard->expMonth = $dati->exp_mm;
         $GP_submit->paymentTypeDetails->creditcard->expYear = $dati->exp_yy;
         $GP_submit->paymentTypeDetails->creditcard->CVV = $dati->cvv;
         $GP_submit->paymentTypeDetails->creditcard->DCC = null;
+        // Per la donazione regolare richiedo la tokenizzazione della carta (token per gli addebiti futuri)
+        if ( isset( $dati->GPtransactionType ) && "regular" == $dati->GPtransactionType ) {
+            $GP_submit->paymentTypeDetails->creditcard->requestToken = "MASKEDPAN";
+        }
         $GP_submit->buyer = new stdClass();
-        $GP_submit->buyer->email = $dati->mail;
-        $GP_submit->buyer->name = $dati->titolare;
-    } else {
-        $GP_submit->paymentTypeDetails->creditcard->number = "";
-        $GP_submit->paymentTypeDetails->creditcard->token = $dati->token;
-        $GP_submit->paymentTypeDetails->creditcard->requestToken = "";
-        $GP_submit->paymentTypeDetails->creditcard->expMonth = ""; //$dati->tokenExpiryMonth;
-        $GP_submit->paymentTypeDetails->creditcard->expYear = ""; //$dati->tokenExpiryYear;
-        $GP_submit->paymentTypeDetails->creditcard->CVV = ""; //$dati->cvvcode;  
+        $GP_submit->buyer->email = $dati->mail ?? '';
+        $GP_submit->buyer->name = $dati->titolare ?? '';
     }
     $GP_submit->responseURLs = new stdClass();
     $GP_submit->responseURLs->buyerOK = GP_BUYEROK;

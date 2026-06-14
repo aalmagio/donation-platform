@@ -152,7 +152,69 @@ function ScriviAnagraficaDonato_mysql( $anagrafica ) {
 }
 //mySQL - Tessera In regalo - END
 
+/**
+ * Attiva un mandato dopo il primo addebito andato a buon fine:
+ * imposta stato=attivo, calcola la prossima data di addebito in base alla frequenza
+ * (1 = mensile, 12 = annuale) e registra il primo addebito.
+ */
+function attivaMandato_mysql( $id_mandato, $frequenza ) {
+    $connection = getSharedConnection();
+    if ( !$connection ) {
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "attivaMandato_mysql: connessione fallita" . PHP_EOL, 3, LOG_FILE );
+        return false;
+    }
+    $mesi = ( (int) $frequenza === 12 ) ? 12 : 1;          // 12 = annuale, default mensile
+    $prossima = date( 'Y-m-d', strtotime( "+$mesi month" ) );
+    $stmt = $connection->prepare(
+        "UPDATE Mandato SET stato='attivo', prossima_data=?, ultimo_addebito=NOW(), ultimo_esito='OK', n_addebiti=n_addebiti+1 WHERE Id_mandato=?"
+    );
+    if ( !$stmt ) {
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "attivaMandato_mysql prepare failed: " . $connection->error . PHP_EOL, 3, LOG_FILE );
+        return false;
+    }
+    $id = (int) $id_mandato;
+    $stmt->bind_param( 'si', $prossima, $id );
+    $ok = $stmt->execute();
+    if ( !$ok ) {
+        error_log( date( '[Y-m-d H:i:s e] ' ) . "attivaMandato_mysql execute failed: " . $stmt->error . PHP_EOL, 3, LOG_FILE );
+    }
+    $stmt->close();
+    return $ok;
+}
+
+/**
+ * Attiva il mandato 'in_attesa' più recente di un donatore (usato al ritorno 3DS,
+ * dove si dispone di Id_a ma non dell'Id_mandato).
+ */
+function attivaMandatoDonatore_mysql( $id_a, $token = '', $tokenMese = '', $tokenAnno = '' ) {
+    $connection = getSharedConnection();
+    if ( !$connection ) { return false; }
+    $id = (int) $id_a;
+    $stmt = $connection->prepare( "SELECT Id_mandato, frequenza FROM Mandato WHERE Id_a = ? AND stato = 'in_attesa' ORDER BY Id_mandato DESC LIMIT 1" );
+    if ( !$stmt ) { return false; }
+    $stmt->bind_param( 'i', $id );
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res->fetch_assoc();
+    $stmt->close();
+    if ( !$row ) { return false; }
+    // Se il token della carta è arrivato dopo il 3DS, lo salvo nel mandato
+    if ( $token !== '' ) {
+        $stmt2 = $connection->prepare( "UPDATE Mandato SET Token=?, meseToken=?, annoToken=? WHERE Id_mandato=?" );
+        if ( $stmt2 ) {
+            $stmt2->bind_param( 'sssi', $token, $tokenMese, $tokenAnno, $row[ 'Id_mandato' ] );
+            $stmt2->execute();
+            $stmt2->close();
+        }
+    }
+    return attivaMandato_mysql( $row[ 'Id_mandato' ], $row[ 'frequenza' ] );
+}
+
 function ScriviMandato_mysql( $mandato ) {
+    // Normalizza i campi opzionali (molti sono specifici SDD e assenti per CC, o viceversa)
+    foreach ( array( 'codiceAnagraficaMentor', 'id_campagna', 'centro', 'codiceCanale', 'metodo', 'IBAN', 'BIC', 'Token', 'meseToken', 'annoToken', 'titolare', 'codiceFiscaleTitolare', 'indirizzoTitolare', 'localitaTitolare', 'provinciaTitolare', 'cap', 'nota' ) as $p ) {
+        if ( !isset( $mandato->$p ) ) { $mandato->$p = ''; }
+    }
     $connection = getSharedConnection();
     if ( !$connection ) {
         error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviMandato_mysql: connessione fallita: " . mysqli_connect_error() . PHP_EOL, 3, LOG_FILE );
@@ -162,7 +224,8 @@ function ScriviMandato_mysql( $mandato ) {
         error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviMandato_mysql prepare failed: " . $connection->error . PHP_EOL, 3, LOG_FILE );
         return false;
     }
-    if ( !$stmt->bind_param( 'issssiisssssssssssss', $mandato->Id_a, $mandato->codiceAnagraficaMentor, $mandato->id_campagna, $mandato->centro, $mandato->codiceCanale, $mandato->importo, $mandato->frequenza, $mandato->metodo, strtoupper( $mandato->IBAN ), $mandato->BIC, $mandato->Token, $mandato->meseToken, $mandato->annoToken, $mandato->titolare, $mandato->codiceFiscaleTitolare, $mandato->indirizzoTitolare, $mandato->localitaTitolare, $mandato->provinciaTitolare, $mandato->cap, $mandato->nota ) ) {
+    $iban_up = strtoupper( $mandato->IBAN );
+    if ( !$stmt->bind_param( 'issssiisssssssssssss', $mandato->Id_a, $mandato->codiceAnagraficaMentor, $mandato->id_campagna, $mandato->centro, $mandato->codiceCanale, $mandato->importo, $mandato->frequenza, $mandato->metodo, $iban_up, $mandato->BIC, $mandato->Token, $mandato->meseToken, $mandato->annoToken, $mandato->titolare, $mandato->codiceFiscaleTitolare, $mandato->indirizzoTitolare, $mandato->localitaTitolare, $mandato->provinciaTitolare, $mandato->cap, $mandato->nota ) ) {
         error_log( date( '[Y-m-d H:i:s e] ' ) . "ScriviMandato_mysql bind failed: " . $stmt->error . PHP_EOL, 3, LOG_FILE );
         $stmt->close();
         return false;

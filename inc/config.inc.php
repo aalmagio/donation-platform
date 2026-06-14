@@ -182,6 +182,8 @@ if (!defined('TESSERA_DESC'))      define('TESSERA_DESC', '');
 if (!defined('TESSERA_COST_JUNIOR')) define('TESSERA_COST_JUNIOR', 0);
 if (!defined('TESSERA_COST_SENIOR')) define('TESSERA_COST_SENIOR', 0);
 if (!defined('DATA_SCAD_TESSERA')) define('DATA_SCAD_TESSERA', '');
+// Chiave per autorizzare il cron addebiti ricorrenti via HTTP (vuota = solo CLI)
+if (!defined('CRON_REGULAR_KEY')) define('CRON_REGULAR_KEY', env('CRON_REGULAR_KEY', ''));
 
 // Debug automatico basato su USE_SANDBOX
 if (defined('USE_SANDBOX') && USE_SANDBOX) {
