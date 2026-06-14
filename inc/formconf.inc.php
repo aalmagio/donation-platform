@@ -31,22 +31,20 @@ $form_conf['field']['cvv'] = "CVV";
 $form_conf['field']['exp_mm'] = "Mese";
 $form_conf['field']['exp_yy'] = "Anno";
 
-$form_conf['field']['amount'] = array();
-$form_conf['field']['cost_ex'] = array();
-
-// Importi suggeriti (dal più alto al più basso)
-$form_conf['field']['amount'][0] = 100;
-$form_conf['field']['amount'][1] = 50;
-$form_conf['field']['amount'][2] = 30;
-$form_conf['field']['amount'][3] = 20;
+// Importi suggeriti per tipo donazione, letti dalla tabella config (CSV) — configurabili da backend
+$csv_to_amounts = function ( $csv ) {
+    $out = array();
+    foreach ( explode( ',', (string) $csv ) as $v ) {
+        $v = trim( $v );
+        if ( $v !== '' && ctype_digit( $v ) ) { $out[] = (int) $v; }
+    }
+    return $out;
+};
+$form_conf['field']['amount_oneoff']  = $csv_to_amounts( defined('AMOUNTS_ONEOFF')  ? AMOUNTS_ONEOFF  : '20,30,50,100' );
+$form_conf['field']['amount_mensile'] = $csv_to_amounts( defined('AMOUNTS_MENSILE') ? AMOUNTS_MENSILE : '10,15,25,50' );
+$form_conf['field']['amount_annuale'] = $csv_to_amounts( defined('AMOUNTS_ANNUALE') ? AMOUNTS_ANNUALE : '120,180,300,600' );
 $form_conf['field']['amount']['altro'] = "Altro importo";
 $form_conf['field']['amount']['free'] = "Indica l'importo (senza decimali)";
-
-// Descrizione facoltativa per ogni importo suggerito (es. cosa permette di fare la donazione)
-$form_conf['field']['cost_ex'][0] = "";
-$form_conf['field']['cost_ex'][1] = "";
-$form_conf['field']['cost_ex'][2] = "";
-$form_conf['field']['cost_ex'][3] = "";
 
 $form_conf['field']['privacy'] = 'Ho letto e accetto i termini dell&rsquo;Informativa sul trattamento dei dati (<strong>conferma per proseguire</strong>)';
 $form_conf['field']['info_privacy'] = '<small id="informativa" class="" style="font-size:60%;line-height:1.4;display:inline-block;color:#555555;height:8em;overflow-y:scroll;background-color: white;padding:10px;"><p><strong>Informativa ai sensi del Regolamento UE 2016/679 (GDPR):</strong> ' . ORG_NAME . ', in qualit&agrave; di Titolare del trattamento ai sensi del Regolamento UE 2016/679 (GDPR), tratta i Dati Personali conferiti per la gestione delle donazioni.</p>

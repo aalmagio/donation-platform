@@ -185,6 +185,14 @@ if (!defined('DATA_SCAD_TESSERA')) define('DATA_SCAD_TESSERA', '');
 // Chiave per autorizzare il cron addebiti ricorrenti via HTTP (vuota = solo CLI)
 if (!defined('CRON_REGULAR_KEY')) define('CRON_REGULAR_KEY', env('CRON_REGULAR_KEY', ''));
 
+// --- Importi suggeriti e minimi per tipo di donazione (configurabili dalla tabella config) ---
+if (!defined('AMOUNTS_ONEOFF'))         define('AMOUNTS_ONEOFF', '20,30,50,100');
+if (!defined('AMOUNTS_MENSILE'))        define('AMOUNTS_MENSILE', '10,15,25,50');
+if (!defined('AMOUNTS_ANNUALE'))        define('AMOUNTS_ANNUALE', '120,180,300,600');
+if (!defined('IMPORTO_MINIMO_ONE'))     define('IMPORTO_MINIMO_ONE', 5);
+if (!defined('IMPORTO_MINIMO_MENSILE')) define('IMPORTO_MINIMO_MENSILE', 5);
+if (!defined('IMPORTO_MINIMO_ANNUALE')) define('IMPORTO_MINIMO_ANNUALE', 100);
+
 // Debug automatico basato su USE_SANDBOX
 if (defined('USE_SANDBOX') && USE_SANDBOX) {
     define('DEBUG', 1);

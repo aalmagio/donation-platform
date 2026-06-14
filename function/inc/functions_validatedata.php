@@ -253,15 +253,26 @@ function ValidaDati() {
             $messaggio_errore .= "E021|";
             $arr_errore[ 'E021' ] = 0; //"L'importo deve esser un numero intero";
         }
-        if ( !isset( $query_data->importo ) || trim( $query_data->importo ) == "" || $query_data->importo == 0 ) {
-            if ( isset( $query_data->importo_libero ) &&  is_numeric( $query_data->importo_libero) && $query_data->importo_libero >= IMPORTO_MINIMO_ONE ) {
-                $query_data->importo = $query_data->importo_libero;    
+        // Importo minimo in base al tipo di donazione (configurabile da backend)
+        $min_importo = defined( 'IMPORTO_MINIMO_ONE' ) ? (int) IMPORTO_MINIMO_ONE : 5;
+        if ( $query_data->tipo_donazione == "regular" ) {
+            $freq = isset( $query_data->frequenza ) ? (int) $query_data->frequenza : 1;
+            if ( $freq === 12 ) {
+                $min_importo = defined( 'IMPORTO_MINIMO_ANNUALE' ) ? (int) IMPORTO_MINIMO_ANNUALE : $min_importo;
+            } else {
+                $min_importo = defined( 'IMPORTO_MINIMO_MENSILE' ) ? (int) IMPORTO_MINIMO_MENSILE : $min_importo;
             }
         }
-        if ( $query_data->tipo_donazione == "oneoff" && defined( 'IMPORTO_MINIMO_ONE' ) && $query_data->importo < IMPORTO_MINIMO_ONE ) {
+        // Se non è stato scelto un importo predefinito, uso l'importo libero (se rispetta il minimo)
+        if ( !isset( $query_data->importo ) || trim( $query_data->importo ) == "" || $query_data->importo == 0 ) {
+            if ( isset( $query_data->importo_libero ) && is_numeric( $query_data->importo_libero ) && $query_data->importo_libero >= $min_importo ) {
+                $query_data->importo = $query_data->importo_libero;
+            }
+        }
+        if ( isset( $query_data->importo ) && is_numeric( $query_data->importo ) && $query_data->importo < $min_importo ) {
             $errore++;
             $messaggio_errore .= "E021|";
-            $arr_errore[ 'E021' ] = 0; //"L'importo deve essere maggiore di " . IMPORTO_MINIMO_ONE . " euro";
+            $arr_errore[ 'E021' ] = 0; //"L'importo deve essere almeno " . $min_importo . " euro";
         }
         //Id_a e importo sono sempre obbligatori per la doanzione per cui non verifico nemmeno se sono in reqfield
         if ( in_array( "pay_method", $req_fields ) && ( !isset( $query_data->pay_method ) || trim( $query_data->pay_method ) == "" ) ) {

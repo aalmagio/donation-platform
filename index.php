@@ -100,20 +100,31 @@ $client_ip = $_SERVER['REMOTE_ADDR'] ?? '';
         </div>
 
         <hr>
-        <fieldset class="radio-buttons">
-          <legend class="form-legend">Seleziona l'importo da donare</legend>
-          <?php foreach (array(3, 2, 1, 0) as $i) { $imp = $form_conf['field']['amount'][$i]; ?>
+        <legend class="form-legend">Seleziona l'importo da donare</legend>
+        <?php
+        // Tre set di importi suggeriti (uno per tipo). Visibile solo quello pertinente; gli altri
+        // sono disabilitati così non vengono inviati. I valori sono configurabili dalla tabella config.
+        $amount_sets = array(
+            'oneoff'  => $form_conf['field']['amount_oneoff'],
+            'mensile' => $form_conf['field']['amount_mensile'],
+            'annuale' => $form_conf['field']['amount_annuale'],
+        );
+        foreach ( $amount_sets as $set_key => $set_amounts ) {
+            $is_default = ( $set_key === 'oneoff' );
+        ?>
+        <fieldset class="radio-buttons amount-set" id="amounts-<?php echo $set_key; ?>"<?php echo $is_default ? '' : ' style="display:none"'; ?>>
+          <?php foreach ( $set_amounts as $imp ) { ?>
           <label class="radio-option">
-            <input type="radio" name="importo" value="<?php echo $imp; ?>">
+            <input type="radio" name="importo" value="<?php echo $imp; ?>"<?php echo $is_default ? '' : ' disabled'; ?>>
             <?php echo $imp; ?>&euro;
-            <?php if (!empty($form_conf['field']['cost_ex'][$i])) { ?><small><?php echo $form_conf['field']['cost_ex'][$i]; ?></small><?php } ?>
           </label>
           <?php } ?>
           <label class="radio-option">
-            <input type="radio" name="importo" value="altro" id="importodinamico">
+            <input type="radio" name="importo" value="altro" class="altro-radio"<?php echo $is_default ? '' : ' disabled'; ?>>
             <?php echo $form_conf['field']['amount']['altro']; ?>
           </label>
         </fieldset>
+        <?php } ?>
 
         <div id="altro_importo">
           <legend class="form-legend"><?php echo $form_conf['field']['amount']['free']; ?></legend>
@@ -168,8 +179,22 @@ $(document).ready(function() {
     }
 
     $('#importolibero').on('input', function() {
-        $('#importodinamico').val(this.value.replace(/[^0-9]/g, ''));
+        // imposta il valore della radio "Altro" attiva sull'importo digitato
+        $('.altro-radio:enabled').val(this.value.replace(/[^0-9]/g, ''));
     });
+
+    // Mostra il set di importi corretto per il tipo di donazione scelto
+    function showAmountSet(setKey) {
+        $('.amount-set').each(function() {
+            var match = (this.id === 'amounts-' + setKey);
+            $(this).toggle(match);
+            $(this).find('input[name="importo"]').prop('disabled', !match);
+        });
+        // azzero la selezione e nascondo il campo "altro" quando cambio set
+        $('input[name="importo"]').prop('checked', false);
+        $('#altro_importo').hide();
+        $('#importolibero').val('');
+    }
 
     $('.btn-next').click(function() {
         var requiredFields = ['#nome', '#cognome', '#mail', '#tel'];
@@ -209,6 +234,7 @@ $(document).ready(function() {
             $('#frequenza').val('');
             $('#payMethods .radio-option').show();
             $('#regularHint').hide();
+            showAmountSet('oneoff');
         } else {
             $('#tipo_donazione').val('regular');
             $('#frequenza').val(v); // 1 = mensile, 12 = annuale
@@ -219,6 +245,7 @@ $(document).ready(function() {
             });
             $('#payMethods input[name="pay_method"][value="CC"]').prop('checked', true).trigger('change');
             $('#regularHint').show();
+            showAmountSet(v === '12' ? 'annuale' : 'mensile');
         }
     });
 
