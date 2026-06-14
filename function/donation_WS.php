@@ -463,11 +463,14 @@ if ( $query_action->operation == "do" && $query_action->param == "transaction" )
                                                 }
                                             }
                                         }
-                                        // Se la carta è stata tokenizzata, salvo il token nel mandato per gli addebiti ricorrenti
-                                        if ( !empty( $query_data->token ) ) {
-                                            $query_data->GP_token = $query_data->token;
-                                            $query_data->GP_tokenExpiryMonth = $query_data->tokenExpiryMonth ?? '';
-                                            $query_data->GP_tokenExpiryYear = $query_data->tokenExpiryYear ?? '';
+                                        // Il token della carta NON è nella risposta del submit ma nel dettaglio
+                                        // del pagamento: lo recupero con GetOrderGestPay e lo salvo nel mandato.
+                                        $gp_detail = call_user_func_array( 'GetOrderGestPay', array( $query_data ) );
+                                        $gp_token = ( is_object( $gp_detail ) && isset( $gp_detail->payload->token ) ) ? $gp_detail->payload->token : '';
+                                        if ( !empty( $gp_token ) ) {
+                                            $query_data->GP_token = $gp_token;
+                                            $query_data->GP_tokenExpiryMonth = $gp_detail->payload->tokenExpiryMonth ?? '';
+                                            $query_data->GP_tokenExpiryYear = $gp_detail->payload->tokenExpiryYear ?? '';
                                             $query_data->errore_mandato_Mentor = '';
                                             call_user_func_array( 'aggiornaMandatoToken_mysql', array( $query_data ) );
                                         }

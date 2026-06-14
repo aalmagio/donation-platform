@@ -13,15 +13,15 @@ function CreateOrderGestPay( $dati ) {
     $dati_GP->responseURLs->buyerKO = GP_BUYERKO;
     $dati_GP->responseURLs->serverNotificationURL = GP_NOTIFURL;
     if ( "regular" == ( $dati->GPtransactionType ?? '' ) ) {
-        $dati_GP->transDetails = new stdClass();
-        $dati_GP->transDetails->type = "08"; //Mail order
-        //$dati_GP->transDetails->type  ="01F"; //Recurring first
-        //$dati_GP->transDetails->type  ="03F"; //Unscheduled first
-        // Richiesta di tokenizzazione della carta per gli addebiti ricorrenti futuri.
-        // In GestPay/Axerve REST il token va richiesto nella createPayment.
-        if ( empty( $dati->token ) ) {       // solo al primo addebito (quando uso la carta, non un token già esistente)
+        $dati_GP->recurrent = "true";
+        if ( empty( $dati->token ) ) {
+            // Primo addebito di una serie ricorrente: type "01F" (Recurring First) per far
+            // emettere a GestPay il token della carta da riusare negli addebiti successivi.
+            $dati_GP->transDetails = new stdClass();
+            $dati_GP->transDetails->type = "01F";
             $dati_GP->requestToken = "MASKEDPAN";
         }
+        // Addebito successivo con token salvato: basta recurrent=true (nessun transDetails->type).
     }
     /*else{
            $dati_GP->transDetails  = new stdClass();
