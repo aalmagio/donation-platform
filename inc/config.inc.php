@@ -232,8 +232,17 @@ if ( defined('USE_SATISPAY') && USE_SATISPAY == true ) {
 	define( 'SY_BUYERKO', $url_di_base . '/errore.php' );
 }
 if ( defined('USE_STRIPE') && USE_STRIPE == true ) {
-	define( 'ST_URLAPI', 'https://api.stripe.com/v1' );
+	define( 'ST_URLAPI', 'https://api.stripe.com/v1' ); // Stripe: stesso endpoint, test/live in base alla chiave
 }
+
+// --- Endpoint dei gateway in base all'ambiente ---
+// Un unico interruttore: USE_SANDBOX=1 => endpoint di test, USE_SANDBOX=0 => produzione.
+// Così non serve cambiare anche gli URL quando si passa in produzione (basta USE_SANDBOX + le credenziali giuste).
+// NB: se un endpoint è già stato definito dalla tabella config, quello ha la precedenza (override avanzato).
+$is_sandbox = ( defined('USE_SANDBOX') && USE_SANDBOX == true );
+if ( !defined('PP_URLAPI') )   define( 'PP_URLAPI',   $is_sandbox ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com' );
+if ( !defined('PP_REDIRECT') ) define( 'PP_REDIRECT', $is_sandbox ? 'https://www.sandbox.paypal.com'   : 'https://www.paypal.com' );
+if ( !defined('GP_URLAPI') )   define( 'GP_URLAPI',   $is_sandbox ? 'https://sandbox.gestpay.net/api'  : 'https://ecomms2s.sella.it/api' );
 
 define( 'INCLUDE_FOLDER', PERCORSO_DI_BASE . '/inc' );
 define( 'EMAIL_FOLDER', PERCORSO_DI_BASE . '/email' );

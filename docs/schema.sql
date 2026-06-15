@@ -348,16 +348,13 @@ INSERT INTO `config` (`Form`, `PARAMETER`, `VALUE`) VALUES
 -- Sicurezza (genera valori casuali robusti!)
 ('DEFAULT', 'SALT_3D', ''),
 ('DEFAULT', 'SALT_MAIL', ''),
--- PayPal
-('DEFAULT', 'PP_URLAPI', 'https://api.paypal.com'),
-('DEFAULT', 'PP_REDIRECT', 'https://www.paypal.com'),
+-- PayPal (gli endpoint PP_URLAPI/PP_REDIRECT sono derivati da USE_SANDBOX in config.inc.php)
 ('DEFAULT', 'CLIENT_ID_PP', ''),
 ('DEFAULT', 'SECRET_ID_PP', ''),
 -- Satispay
 ('DEFAULT', 'SY_APIURL', 'https://authservices.satispay.com/'),
 ('DEFAULT', 'SY_REDIRECT', 'https://online.satispay.com'),
--- GestPay / Axerve
-('DEFAULT', 'GP_URLAPI', 'https://ecomms2s.sella.it/api'),
+-- GestPay / Axerve (GP_URLAPI è derivato da USE_SANDBOX in config.inc.php)
 ('DEFAULT', 'GP_COD_ESE', ''),
 ('DEFAULT', 'GP_APIKEY', ''),
 -- Stripe
